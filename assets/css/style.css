@@ -1,0 +1,74 @@
+/* --- style.css --- */
+body {
+    font-family: HelveticaNeue, "Helvetica Neue", Helvetica, Arial, sans-serif;
+    background-color: #ffffff;
+    color: #001435;
+    margin: 0; padding: 0; display: flex; flex-direction: column; min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+}
+* { box-sizing: border-box; }
+.corral { width: 100%; max-width: 460px; margin: 0 auto; padding-top: 50px; display: flex; flex-direction: column; align-items: center; }
+.login-card { width: 100%; background-color: #ffffff; border: 1px solid #eaeced; border-radius: 8px; padding: 45px 40px 20px; margin-bottom: 30px; position: relative; text-align: center; box-shadow: 0 0 0 transparent; }
+@media (max-width: 767px) { .corral { padding-top: 0; } .login-card { border: none; border-radius: 0; padding: 30px 8%; } }
+
+/* الشعار */
+.logo-container { margin-bottom: 25px; }
+.logo-text { font-family: Verdana, sans-serif; font-size: 34px; font-weight: bold; color: #000000; text-decoration: none; letter-spacing: -1px; }
+
+/* Floating Labels */
+.input-group { position: relative; margin-bottom: 18px; height: 48px; }
+.field-wrapper { position: relative; height: 100%; border: 1px solid #9da3a6; border-radius: 4px; background: #fff; transition: border 0.2s ease-in-out; z-index: 1; }
+.field-wrapper input { width: 100%; height: 100%; padding: 22px 12px 6px; border: none; background: transparent; font-size: 16px; color: #001435; outline: none; -webkit-appearance: none; z-index: 2; position: relative; }
+.field-wrapper label { position: absolute; top: 14px; left: 12px; font-size: 16px; color: #6c7378; pointer-events: none; transition: all 0.2s ease; z-index: 1; line-height: 1.2; }
+.field-wrapper.focused, .field-wrapper.has-value { border-color: #0070ba; box-shadow: 0 0 0 1px #0070ba inset; }
+.field-wrapper.focused label, .field-wrapper.has-value label { top: 6px; font-size: 13px; font-weight: 600; color: #6c7378; }
+
+/* الخطأ */
+.input-group.error .field-wrapper { border-color: #d93025; box-shadow: 0 0 0 1px #d93025 inset; }
+.input-group.error label { color: #d93025; }
+.error-text { display: none; color: #d93025; font-size: 13px; margin-top: 5px; text-align: left; }
+.input-group.error .error-text { display: block; }
+
+/* الأزرار */
+.actions { margin-top: 20px; margin-bottom: 15px; }
+.btn { width: 100%; height: 48px; border-radius: 24px; font-size: 16px; font-weight: bold; cursor: pointer; border: none; display: flex; justify-content: center; align-items: center; transition: background 0.2s; position: relative; }
+.btn-next { background-color: #0070ba; color: #fff; margin-bottom: 20px; }
+.btn-next:hover { background-color: #003460; }
+.btn-signup { background-color: #fff; color: #001435; border: 1px solid #001435; }
+.btn-signup:hover { color: #545d68; border-color: #545d68; }
+
+/* الفاصل */
+.divider { position: relative; margin: 20px 0; text-align: center; border-top: 1px solid #cbd2d6; height: 0; }
+.divider span { background-color: #fff; padding: 0 10px; color: #6c7378; font-size: 13px; position: relative; top: -9px; }
+
+/* الروابط */
+.link { color: #0070ba; text-decoration: none; font-weight: 600; font-size: 14px; }
+.forgot-link { display: block; text-align: left; margin-bottom: 25px; }
+
+/* قسم اللغات */
+.lang-selector { margin-top: 40px; margin-bottom: 10px; font-size: 12px; color: #666; display: flex; justify-content: center; align-items: center; gap: 10px; }
+.lang-item { color: #666; text-decoration: none; font-weight: 500; }
+.lang-item.active { font-weight: bold; color: #000; }
+.flag-icon { font-size: 14px; margin-right: 2px; }
+
+/* الفوتر */
+.footer { margin-top: auto; padding: 30px 0; text-align: center; width: 100%; font-size: 11px; color: #666; }
+.footer ul { padding: 0; list-style: none; margin: 0; }
+.footer li { display: inline-block; margin: 0 8px; }
+
+/* Spinner */
+.spinner { width: 22px; height: 22px; border: 3px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: #fff; animation: spin 0.8s linear infinite; position: absolute; display: none; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading .btn-text { visibility: hidden; }
+.loading .spinner { display: block; }
+
+/* --- OTP Specific Styles (يجب إضافتها لملف CSS الموحد) --- */
+.otp-container { display: flex; justify-content: space-between; margin: 40px 0; width: 100%; max-width: 320px; margin-left: auto; margin-right: auto; }
+.otp-input { width: 40px; height: 55px; text-align: center; font-size: 24px; border: 1px solid #9da3a6; border-radius: 4px; outline: none; transition: border-color 0.2s, box-shadow 0.2s; }
+.otp-input:focus { border-color: #0070ba; box-shadow: 0 0 0 1px #0070ba inset; }
+.btn-verify { background-color: #0070ba; color: #fff; }
+.btn-verify:hover { background-color: #003460; }
+.resend-link { display: block; margin-top: 20px; color: #0070ba; font-weight: 600; font-size: 14px; text-decoration: none; }
+.header-text { font-size: 18px; color: #000000; font-weight: 500; margin-bottom: 30px; line-height: 1.5; }
+.waiting-container { text-align: center; padding: 40px; }
+.spinner-large { width: 50px; height: 50px; border: 5px solid #f3f3f3; border-top: 5px solid #0070ba; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 20px; }
