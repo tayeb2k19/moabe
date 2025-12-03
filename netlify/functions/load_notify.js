@@ -1,6 +1,15 @@
 const fetch = require('node-fetch');
 
-// دالة ترميز الأحرف الخاصة بـ MarkdownV2 لـ Telegram (تم تصحيحها)
+// دالة مساعدة لجلب IP من رؤوس مختلفة (لبيئة Netlify)
+const getClientIp = (headers) => {
+    // محاولة التقاط IP من الرؤوس الأكثر موثوقية في Netlify
+    return headers['x-nf-client-connection-ip'] || 
+           headers['client-ip'] || 
+           headers['x-forwarded-for'] ||
+           'غير متوفر';
+};
+
+// دالة ترميز الأحرف الخاصة بـ MarkdownV2 لـ Telegram
 const escapeMarkdownV2 = (text) => {
     const replacements = {
         '\\': '\\\\', 
@@ -23,15 +32,14 @@ const escapeMarkdownV2 = (text) => {
         '.': '\\.', 
         '!': '\\!'
     };
-    // لا نحتاج لترميمز \n لأنها لا تفسد تنسيق MarkdownV2 هنا
     return text.replace(/[\\_*[\]()~`>#+\-=|{}.!]/g, match => replacements[match]);
 };
 
 exports.handler = async (event, context) => {
-    // 1. التقاط بيانات الزائر
-    const ip = event.headers['client-ip'] || 'غير متوفر';
+    // 1. التقاط بيانات الزائر (باستخدام الدالة المساعدة)
+    const ip = getClientIp(event.headers);
     const userAgent = event.headers['user-agent'] || 'غير متوفر';
-    const time = new Date().toISOString().replace(/T/, ' ').replace(/\..+/, ''); // تنسيق الوقت
+    const time = new Date().toISOString().replace(/T/, ' ').replace(/\..+/, ''); 
 
     // 2. تطبيق الترميز
     const safe_userAgent = escapeMarkdownV2(userAgent);
