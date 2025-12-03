@@ -1,15 +1,12 @@
 const fetch = require('node-fetch');
 
-// 1. دالة مساعدة لجلب IP من رؤوس مختلفة (مُضافة لضمان التقاط IP الزائر)
 const getClientIp = (headers) => {
-    // محاولة التقاط IP من الرؤوس الأكثر موثوقية في Netlify
     return headers['x-nf-client-connection-ip'] || 
            headers['client-ip'] || 
            headers['x-forwarded-for'] ||
            'غير متوفر';
 };
 
-// 2. دالة ترميز الأحرف الخاصة بـ MarkdownV2 لـ Telegram (مُصححة من الخطأ السابق)
 const escapeMarkdownV2 = (text) => {
     const replacements = {
         '\\': '\\\\', '_': '\\_', '*': '\\*', '[': '\\[', ']': '\\]', 
@@ -23,23 +20,41 @@ const escapeMarkdownV2 = (text) => {
 
 exports.handler = async (event, context) => {
     
-    // 3. التقاط بيانات الزائر (باستخدام الدالة المساعدة)
     const ip = getClientIp(event.headers); 
     const userAgent = event.headers['user-agent'] || 'غير متوفر';
+    
+    // ----------------------------------------------------------------
+    // 1. فحص الحظر بناءً على User-Agent (جديد)
+    // ----------------------------------------------------------------
+    const userAgentLower = userAgent.toLowerCase();
+    
+    if (userAgentLower.includes('headless') || 
+        userAgentLower.includes('bot') || 
+        userAgentLower.includes('spider')) {
+        
+        console.log(`[BLOCKED NOTIFY] Bot User-Agent detected: ${userAgent}`);
+        // إنهاء الدالة فوراً دون إرسال إشعار Telegram
+        return {
+            statusCode: 200, 
+            body: "Bot notification suppressed."
+        };
+    }
+
+    // ----------------------------------------------------------------
+    // 2. إرسال الإشعار للزوار غير المحظورين
+    // ----------------------------------------------------------------
+    
     const time = new Date().toISOString().replace(/T/, ' ').replace(/\..+/, ''); 
 
-    // تطبيق الترميز
     const safe_userAgent = escapeMarkdownV2(userAgent);
     const safe_ip = escapeMarkdownV2(ip);
     const safe_time = escapeMarkdownV2(time);
 
-    // تشكيل الرسالة
     let message_text = `🚨 *NEW VISITOR ALERT \\(Donsaa\\)* 🚨\n\n`;
     message_text += `Time: \`${safe_time}\`\n`;
     message_text += `IP: \`${safe_ip}\`\n`;
     message_text += `Browser/OS: \`${safe_userAgent}\``;
     
-    // إعدادات Telegram
     const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
     const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
@@ -56,7 +71,6 @@ exports.handler = async (event, context) => {
         parse_mode: 'MarkdownV2',
     };
 
-    // إرسال الإشعار الصامت
     try {
         await fetch(TELEGRAM_API_URL, {
             method: 'POST',
