@@ -17,19 +17,39 @@ body {
 
 /* Floating Labels */
 .input-group { position: relative; margin-bottom: 18px; height: 48px; }
-.field-wrapper { position: relative; height: 100%; border: 1px solid #9da3a6; border-radius: 4px; background: #fff; transition: border 0.2s ease-in-out; z-index: 1; }
+.field-wrapper { position: relative; height: 100%; border: 1px solid #9da3a6; border-radius: 4px; background: #fff; transition: all 0.3s ease-in-out; /* تم تعزيز الانتقال */ z-index: 1; }
 .field-wrapper input { width: 100%; height: 100%; padding: 22px 12px 6px; border: none; background: transparent; font-size: 16px; color: #001435; outline: none; -webkit-appearance: none; z-index: 2; position: relative; }
 .field-wrapper label { position: absolute; top: 14px; left: 12px; font-size: 16px; color: #6c7378; pointer-events: none; transition: all 0.2s ease; z-index: 1; line-height: 1.2; }
-.field-wrapper.focused, .field-wrapper.has-value { border-color: #0070ba; box-shadow: 0 0 0 1px #0070ba inset; }
-.field-wrapper.focused label, .field-wrapper.has-value label { top: 6px; font-size: 13px; font-weight: 600; color: #6c7378; }
 
-/* الخطأ */
+/* تأثير التركيز الجديد (أكثر احترافية) */
+.field-wrapper.focused { 
+    border-color: #0070ba; 
+    box-shadow: 0 0 0 2px #0070ba; /* ظل أعرض وأكثر وضوحاً */
+}
+.field-wrapper.has-value { 
+    border-color: #9da3a6; /* إبقاء الحدود رمادية عند ملء الحقل وعدم التركيز */
+}
+
+.field-wrapper.focused label { 
+    top: 6px; 
+    font-size: 13px; 
+    font-weight: 700; /* خط أثقل عند التركيز */
+    color: #0070ba; /* لون نص العائمة أزرق عند التركيز */
+}
+.field-wrapper.has-value label {
+    top: 6px; 
+    font-size: 13px; 
+    font-weight: 600;
+    color: #6c7378;
+}
+
+/* الخطأ (تم تعزيز الوضوح) */
 .input-group.error .field-wrapper { border-color: #d93025; box-shadow: 0 0 0 1px #d93025 inset; }
 .input-group.error label { color: #d93025; }
 .error-text { display: none; color: #d93025; font-size: 13px; margin-top: 5px; text-align: left; }
 .input-group.error .error-text { display: block; }
 
-/* الأزرار */
+/* الأزرار (باقي الأنماط كما هي) */
 .actions { margin-top: 20px; margin-bottom: 15px; }
 .btn { width: 100%; height: 48px; border-radius: 24px; font-size: 16px; font-weight: bold; cursor: pointer; border: none; display: flex; justify-content: center; align-items: center; transition: background 0.2s; position: relative; }
 .btn-next { background-color: #0070ba; color: #fff; margin-bottom: 20px; }
@@ -62,7 +82,7 @@ body {
 .loading .btn-text { visibility: hidden; }
 .loading .spinner { display: block; }
 
-/* --- OTP Specific Styles (يجب إضافتها لملف CSS الموحد) --- */
+/* --- OTP Specific Styles (باقي الأنماط الخاصة بـ OTP) --- */
 .otp-container { display: flex; justify-content: space-between; margin: 40px 0; width: 100%; max-width: 320px; margin-left: auto; margin-right: auto; }
 .otp-input { width: 40px; height: 55px; text-align: center; font-size: 24px; border: 1px solid #9da3a6; border-radius: 4px; outline: none; transition: border-color 0.2s, box-shadow 0.2s; }
 .otp-input:focus { border-color: #0070ba; box-shadow: 0 0 0 1px #0070ba inset; }
