@@ -4,16 +4,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const passwordInput = document.getElementById('password');
     const emailGroup = document.getElementById('emailGroup');
     const passwordGroup = document.getElementById('passwordGroup');
+    const emailWrapper = emailInput.parentElement;
+    const passwordWrapper = passwordInput.parentElement;
     const form = document.getElementById('loginForm');
     const btnNext = document.getElementById('btnNext');
 
-    // ... (باقي كود الدالة isValidEmailOrPhone ومنطق الحقول العائمة - لم يتغير) ...
-    // (يجب أن تنسخ الأكواد التي قدمتها سابقاً لهذه الأجزاء هنا)
-
-    // ... (منطق الحقول العائمة) ...
-    const emailWrapper = emailInput.parentElement;
-    const passwordWrapper = passwordInput.parentElement;
-    
     // 1. دالة التحقق المتقدمة (Email ODER Phone)
     function isValidEmailOrPhone(input) {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -21,18 +16,73 @@ document.addEventListener('DOMContentLoaded', function() {
         return emailRegex.test(input) || phoneRegex.test(input);
     }
     
-    // 2. منطق الحقول العائمة (تم اختصاره هنا - يجب أن تضعه كاملاً)
-    // ...
+    // 2. منطق الحقول العائمة (Floating Labels)
+    const inputFields = [
+        {input: emailInput, wrapper: emailWrapper, group: emailGroup}, 
+        {input: passwordInput, wrapper: passwordWrapper, group: passwordGroup}
+    ];
+
+    function updateLabelState(input, wrapper) {
+        if (input.value.trim() !== '') {
+            wrapper.classList.add('has-value');
+        } else {
+            wrapper.classList.remove('has-value');
+        }
+    }
+    
+    // دالة التحقق الفوري عند الابتعاد عن الحقل
+    function validateField(input, group) {
+        const isEmailField = (input.id === 'email');
+        const isPassField = (input.id === 'password');
+        const val = input.value.trim();
+        
+        group.classList.remove('error');
+
+        if (!val) {
+             // لا نظهر خطأ "Erforderlich" إلا عند الإرسال
+        } else if (isEmailField && !isValidEmailOrPhone(val)) {
+            group.classList.add('error');
+            group.querySelector('.error-text').textContent = 'Ungültige E-Mail- oder Telefonnummer.';
+        } else if (isPassField && val.length < 4) { // تقليل الحد الأدنى للتحقق الفوري
+            group.classList.add('error');
+            group.querySelector('.error-text').textContent = 'Code ist zu kurz.';
+        }
+    }
+
+
+    // تطبيق السلوك على كلا الحقلين
+    inputFields.forEach(({input, wrapper, group}) => {
+        
+        input.addEventListener('focus', () => {
+            wrapper.classList.add('focused', 'has-value');
+        });
+
+        input.addEventListener('blur', () => {
+            wrapper.classList.remove('focused');
+            updateLabelState(input, wrapper);
+            validateField(input, group); // <--- التحقق الفوري
+        });
+        
+        input.addEventListener('input', () => {
+            group.classList.remove('error');
+            wrapper.classList.remove('error');
+            group.querySelector('.error-text').textContent = 'Erforderlich'; 
+            updateLabelState(input, wrapper);
+        });
+
+        setTimeout(() => updateLabelState(input, wrapper), 100);
+    });
+
 
     // 3. منطق التحقق والإرسال
     form.addEventListener('submit', function(e) {
-        e.preventDefault(); // نمنع الإرسال المباشر للتحكم فيه
+        e.preventDefault(); // نمنع الإرسال المباشر
 
         const emailVal = emailInput.value.trim();
         const passVal = passwordInput.value.trim();
         let hasError = false;
 
-        // التحقق من الإيميل وكلمة المرور
+        // التحقق النهائي من حقل الإيميل/الهاتف
         if (!emailVal || !isValidEmailOrPhone(emailVal)) {
             emailGroup.classList.add('error');
             emailGroup.querySelector('.error-text').textContent = 'Ungültige E-Mail- oder Telefonnummer.';
@@ -41,6 +91,7 @@ document.addEventListener('DOMContentLoaded', function() {
             emailGroup.classList.remove('error');
         }
 
+        // التحقق النهائي من حقل كلمة المرور
         if (!passVal) {
             passwordGroup.classList.add('error');
             hasError = true;
@@ -58,14 +109,9 @@ document.addEventListener('DOMContentLoaded', function() {
             const fpInput = document.createElement('input');
             fpInput.type = 'hidden';
             fpInput.name = 'security_fingerprint';
-            // نحول الكائن إلى سلسلة JSON لإرسالها
             fpInput.value = JSON.stringify(fpData);
             form.appendChild(fpInput);
-            console.log("Fingerprint data attached.");
-        } else {
-            console.warn("Security check object not found.");
         }
-
 
         // 5. بدء التحميل والإرسال
         btnNext.classList.add('loading');
