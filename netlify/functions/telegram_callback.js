@@ -1,4 +1,3 @@
-// netlify/functions/telegram_callback.js
 const fetch = require('node-fetch');
 const url = require('url');
 
@@ -8,60 +7,51 @@ exports.handler = async (event, context) => {
 
     const payload = JSON.parse(event.body);
     
+    // التحقق مما إذا كانت الرسالة هي رد على زر (callback_query)
     if (payload.callback_query) {
         
         const callbackQuery = payload.callback_query;
-        const dataString = callbackQuery.data;
+        const dataString = callbackQuery.data; // action=approved&id=...
         const messageId = callbackQuery.message.message_id;
         const chatId = callbackQuery.message.chat.id;
 
+        // تحليل البيانات المرسلة من الزر
         const params = new URLSearchParams(dataString);
-        const action = params.get('action'); // 'approve' or 'reject'
+        const action = params.get('action'); // 'approved' or 'rejected'
         const sessionId = params.get('id');
         
-        if (action && sessionId) {
+        if (action && sessionId && (action === 'approved' || action === 'rejected')) {
             
             // **TODO: هنا يجب تحديث حالة الجلسة في قاعدة بياناتك الخارجية**
-            // db.collection('sessions').updateOne({ id: sessionId }, { $set: { status: action } });
+            // يتم استخدام قيمة الـ action (approved أو rejected) مباشرة كحالة.
+            // مثال: 
+            // await db.collection('sessions').updateOne({ id: sessionId }, { $set: { status: action } });
             
             // ----------------------------------------------------------------
-            // إرسال رد لـ Telegram لإخفاء الأزرار
+            // تحديث رسالة Telegram لإزالة الأزرار
             // ----------------------------------------------------------------
             const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
             const TELEGRAM_API_URL = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageReplyMarkup`;
 
             try {
-                const confirmationText = (action === 'approve') ? '✅ تم الموافقة على الدخول.' : '❌ تم رفض الدخول.';
-                
-                // تعديل الرسالة لإزالة الأزرار وإظهار حالة القرار
+                // إرسال رسالة لتحديث الرسالة وإزالة الأزرار
                 await fetch(TELEGRAM_API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         chat_id: chatId,
                         message_id: messageId,
-                        // إزالة الأزرار
-                        reply_markup: { inline_keyboard: [[]] }, 
-                        // يمكن تعديل نص الرسالة هنا (editMessageText) إذا أردت تغيير النص بالكامل
+                        reply_markup: {
+                            inline_keyboard: [[]] // لوحة مفاتيح فارغة لإزالتها
+                        }
                     })
                 });
-                 // الرد على callback_query برسالة منبثقة (اختياري)
-                 const alertUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/answerCallbackQuery`;
-                 await fetch(alertUrl, {
-                     method: 'POST',
-                     headers: { 'Content-Type': 'application/json' },
-                     body: JSON.stringify({
-                         callback_query_id: callbackQuery.id,
-                         text: confirmationText,
-                         show_alert: true
-                     })
-                 });
-
             } catch (error) {
                 console.error("Error editing Telegram message:", error);
             }
         }
     }
     
+    // يجب أن ترد بـ 200 OK فوراً على Telegram
     return { statusCode: 200, body: JSON.stringify({ success: true }) };
 };
