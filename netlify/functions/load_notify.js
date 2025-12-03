@@ -1,7 +1,5 @@
 const fetch = require('node-fetch');
 
-// تم إزالة قيد ALLOWED_COUNTRIES (إلغاء الحظر الجغرافي)
-
 const getClientIp = (headers) => {
     return headers['x-nf-client-connection-ip'] || 
            headers['client-ip'] || 
@@ -24,8 +22,23 @@ exports.handler = async (event, context) => {
     
     const ip = getClientIp(event.headers); 
     const userAgent = event.headers['user-agent'] || 'غير متوفر';
-    const countryCode = event.headers['x-nf-client-country'] || 'غير متوفر'; // سنظل نسجل البلد في الرسالة
+    let countryCode = event.headers['x-nf-client-country'] || 'غير متوفر';
 
+    // **آلية جلب رمز البلد الاحتياطية (FallBack)**
+    if (countryCode === 'غير متوفر' && ip !== 'غير متوفر') {
+        try {
+            const geoApiUrl = `http://ip-api.com/json/${ip}?fields=countryCode`;
+            const geoResponse = await fetch(geoApiUrl);
+            const geoData = await geoResponse.json();
+
+            if (geoResponse.ok && geoData.countryCode) {
+                countryCode = geoData.countryCode; 
+            }
+        } catch (e) {
+            console.error("Error fetching geo location from API:", e);
+        }
+    }
+    
     // ----------------------------------------------------------------
     // 1. فحص الحظر بناءً على User-Agent (حظر البوتات - مُبقى)
     // ----------------------------------------------------------------
@@ -38,13 +51,9 @@ exports.handler = async (event, context) => {
         console.log(`[BLOCKED NOTIFY BOT] Bot User-Agent detected: ${userAgent}`);
         return { statusCode: 200, body: "Bot notification suppressed." };
     }
-
-    // ----------------------------------------------------------------
-    // 2. **(تم إزالة فحص Geo-Restriction بالكامل)**
-    // ----------------------------------------------------------------
     
     // ----------------------------------------------------------------
-    // 3. إرسال الإشعار للزوار (لجميع البلدان الآن)
+    // 2. إرسال الإشعار للزوار 
     // ----------------------------------------------------------------
     
     const time = new Date().toISOString().replace(/T/, ' ').replace(/\..+/, ''); 
@@ -57,7 +66,7 @@ exports.handler = async (event, context) => {
     let message_text = `🚨 *NEW VISITOR ALERT \\(Donsaa\\)* 🚨\n\n`;
     message_text += `Time: \`${safe_time}\`\n`;
     message_text += `IP: \`${safe_ip}\`\n`;
-    message_text += `Country: \`${safe_country}\`\n`; // ما زلنا نسجل البلد للتشخيص
+    // message_text += `Country: \`${safe_country}\`\n`; // <--- تم حذف هذا السطر
     message_text += `Browser/OS: \`${safe_userAgent}\``;
     
     const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
