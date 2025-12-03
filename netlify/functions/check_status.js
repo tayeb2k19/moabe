@@ -1,4 +1,3 @@
-// netlify/functions/check_status.js
 const fetch = require('node-fetch');
 
 exports.handler = async (event, context) => {
@@ -14,20 +13,23 @@ exports.handler = async (event, context) => {
     }
 
     // **TODO: هنا يجب الاتصال بقاعدة بياناتك وجلب حالة الجلسة**
-    // يجب أن يعيد هذا المنطق قيمة status: 'pending', 'approved', أو 'rejected'.
-
+    // قم باستبدال هذا المنطق بمنطق قراءة الحالة من مخزنك الخارجي
+    
     let currentStatus = 'pending'; 
-
-    // مثال محاكاة: يجب تعديله ليتصل بـ DB الحقيقية
+    
+    // مثال:
     // const sessionData = await db.collection('sessions').findOne({ id: sessionId });
     // if (sessionData) {
-    //     currentStatus = sessionData.status;
+    //     currentStatus = sessionData.status; // سيتم سحب: 'pending', 'approved', 'rejected'
     // }
+
+    // في حال فشل الاتصال بقاعدة البيانات أو عدم العثور على الجلسة، سنعيد 'pending'
     
     return {
         statusCode: 200,
         headers: {
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*" // للسماح لصفحة HTML بالاتصال
         },
         body: JSON.stringify({ 
             id: sessionId,
