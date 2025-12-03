@@ -59,9 +59,9 @@ exports.handler = async (event, context) => {
     try {
         fpData = JSON.parse(fingerprintJSON);
         
-        if (fpData.isHuman === false || fpData.webdriver === "Yes" || fpData.headless === "Yes") {
-            securityStatus = "❌ BLOCKED - Bot/No Interaction";
-            isBlocked = true;
+//        if (fpData.isHuman === false || fpData.webdriver === "Yes" || fpData.headless === "Yes") {
+//            securityStatus = "❌ BLOCKED - Bot/No Interaction";
+//            isBlocked = true;
         }
 
     } catch (e) {
