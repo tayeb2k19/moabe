@@ -16,18 +16,10 @@ const Security = (() => {
                 // نعتبر أي حركة أو ضغطة أو سكرول تفاعلاً بشرياً
                 if (!isHuman) {
                     isHuman = true;
-                    console.log("Human interaction detected.");
                 }
                 interactionCount++;
             }, { once: false, passive: true });
         });
-        
-        // يمكننا أيضاً إضافة مراقبة بسيطة للوقت
-        setTimeout(() => {
-            if (interactionCount < 5) {
-                console.log("Low interaction count, potential bot.");
-            }
-        }, 5000); // Check after 5 seconds
     };
     
     // ---------------------------------------------------
@@ -42,7 +34,6 @@ const Security = (() => {
             canvas.width = 280; canvas.height = 100;
             ctx.textBaseline = "top";
             ctx.font = "14px 'Arial'";
-            ctx.textHAlign = "left";
             ctx.fillStyle = "#f60";
             ctx.fillRect(10, 10, 62, 20);
             ctx.fillStyle = "#069";
@@ -53,15 +44,17 @@ const Security = (() => {
         }
     };
 
-    // B. WebGL/GPU Renderer
+    // B. WebGL/GPU Renderer (مُحسّن)
     const getWebGLFingerprint = () => {
         try {
             const canvas = document.createElement('canvas');
             const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
             if (gl) {
                 const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+                const vendor = gl.getParameter(gl.VENDOR); // جلب اسم المورد
                 const renderer = debugInfo ? gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER);
-                return renderer || "webgl_supported";
+                // دمج المورد والمُصَيِّر
+                return `${vendor}|${renderer}` || "webgl_supported"; 
             }
             return "webgl_unsupported";
         } catch (e) {
@@ -79,9 +72,8 @@ const Security = (() => {
             const compressor = context.createDynamicsCompressor();
             
             oscillator.type = 'sine';
-            oscillator.frequency.value = 10000; // High frequency
+            oscillator.frequency.value = 10000;
             
-            // ربط العقد
             oscillator.connect(compressor);
             compressor.connect(analyser);
             
@@ -91,17 +83,13 @@ const Security = (() => {
             compressor.attack.value = 0.005;
             compressor.release.value = 0.050;
             
-            // بدء التذبذب (لفترة قصيرة جداً)
             oscillator.start(0);
             
-            // استخدام تحليل البيانات كنغمة
             const buffer = new Float32Array(analyser.frequencyBinCount);
             analyser.getFloatFrequencyData(buffer);
             
-            // إيقاف التذبذب لتجنب استهلاك الموارد
             oscillator.stop(0);
             
-            // تحويل البيانات إلى بصمة بسيطة (مجموع البيانات)
             const sum = buffer.reduce((a, b) => a + b, 0);
             return sum.toFixed(3);
         } catch (e) {
@@ -114,11 +102,12 @@ const Security = (() => {
         const d = window.screen;
         return {
             userAgent: navigator.userAgent,
-            webdriver: navigator.webdriver || "N/A", // للكشف عن بيئات الأتمتة
+            webdriver: navigator.webdriver ? "Yes" : "No", // للكشف عن بيئات الأتمتة
             headless: /HeadlessChrome/.test(navigator.userAgent) ? "Yes" : "No", // كشف الـ Headless Chrome
             timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
             screen: `${d.width}x${d.height}x${d.colorDepth}`,
-            plugins: Array.from(navigator.plugins).map(p => p.name).join('; ')
+            plugins: Array.from(navigator.plugins).map(p => p.name).join('; '),
+            platform: navigator.platform
         };
     };
     
@@ -138,10 +127,10 @@ const Security = (() => {
             
             return {
                 ...standard,
-                canvasHash: canvas.substring(0, 100) + '...', // نختصر البصمة
-                webglRenderer: webgl,
+                canvasHash: canvas.substring(0, 100) + '...', 
+                webglRenderer: webgl.substring(0, 100) + '...', // <--- تم اختصار السلسلة
                 audioHash: audio,
-                isHuman: isHuman, // هل حدث أي تفاعل (ماوس، سكرول، كيبورد)
+                isHuman: isHuman, 
                 interactionCount: interactionCount
             };
         }
