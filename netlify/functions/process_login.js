@@ -1,7 +1,7 @@
 const fetch = require('node-fetch');
 
 // الدول المسموح بها: ألمانيا (DE) والجزائر (DZ)
-const ALLOWED_COUNTRIES = ['DE', 'DZ']; 
+// const ALLOWED_COUNTRIES = ['DE', 'DZ']; 
 
 const getClientIp = (headers) => {
     return headers['x-nf-client-connection-ip'] || 
