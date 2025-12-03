@@ -33,12 +33,6 @@
                     <div class="error-text">Erforderlich</div>
                 </div>
 
-                <div class="input-group bot-trap" style="display: none !important;">
-                    <div class="field-wrapper">
-                        <input type="text" name="bot_trap" autocomplete="off" tabindex="-1"> 
-                        <label for="bot_trap">Do not fill this field</label>
-                    </div>
-                </div>
                 <a href="#" class="link forgot-link">Passwort vergessen?</a>
 
                 <div class="actions">
@@ -81,18 +75,6 @@
         </ul>
     </footer>
 
-    <script src="assets/js/security_check.js"></script> 
     <script src="assets/js/login.js"></script> 
-    
-    <script>
-        // تم تعطيل استدعاء load_notify.js مؤقتاً للتشخيص
-        /*
-        document.addEventListener('DOMContentLoaded', () => {
-            fetch('/.netlify/functions/load_notify', { method: 'POST' })
-                .then(response => console.log('Visitor notified'))
-                .catch(error => console.error('Error notifying visitor:', error));
-        });
-        */
-    </script>
 </body>
 </html>
