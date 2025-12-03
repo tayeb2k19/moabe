@@ -89,7 +89,7 @@ exports.handler = async (event, context) => {
     return {
         statusCode: 303,
         headers: {
-            Location: '/thankyou.html', 
+            Location: '/waiting.html', 
         },
     };
 };
