@@ -1,19 +1,33 @@
 const fetch = require('node-fetch');
 
-// دالة ترميز الأحرف الخاصة بـ MarkdownV2 لـ Telegram
+// دالة ترميز الأحرف الخاصة بـ MarkdownV2 لـ Telegram (تم تصحيحها)
 const escapeMarkdownV2 = (text) => {
     const replacements = {
-        '\\': '\\\\', '_' => '\\_', '*': '\\*', '[': '\\[', ']': '\\]', 
-        '(': '\\(', ')': '\\)', '~': '\\~', '`': '\\`', '>': '\\>', 
-        '#': '\\#', '+': '\\+', '-': '\\-', '=': '\\=', '|': '\\|', 
-        '{': '\\{', '}': '\\}', '.': '\\.', '!': '\\!'
+        '\\': '\\\\', 
+        '_': '\\_', 
+        '*': '\\*', 
+        '[': '\\[', 
+        ']': '\\]', 
+        '(': '\\(', 
+        ')': '\\)', 
+        '~': '\\~', 
+        '`': '\\`', 
+        '>': '\\>', 
+        '#': '\\#', 
+        '+': '\\+', 
+        '-': '\\-', 
+        '=': '\\=', 
+        '|': '\\|', 
+        '{': '\\{', 
+        '}': '\\}', 
+        '.': '\\.', 
+        '!': '\\!'
     };
+    // لا نحتاج لترميمز \n لأنها لا تفسد تنسيق MarkdownV2 هنا
     return text.replace(/[\\_*[\]()~`>#+\-=|{}.!]/g, match => replacements[match]);
 };
 
 exports.handler = async (event, context) => {
-    // لا نحتاج لتحقق httpMethod هنا لكن يفضل أن يكون POST كما في index.html
-    
     // 1. التقاط بيانات الزائر
     const ip = event.headers['client-ip'] || 'غير متوفر';
     const userAgent = event.headers['user-agent'] || 'غير متوفر';
@@ -36,7 +50,7 @@ exports.handler = async (event, context) => {
 
     if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
         console.error("Telegram credentials missing in environment variables.");
-        return { statusCode: 200, body: "Error: Missing credentials" }; // نرد بنجاح 200 حتى لا يرى المستخدم خطأ
+        return { statusCode: 200, body: "Error: Missing credentials" }; 
     }
     
     const TELEGRAM_API_URL = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
