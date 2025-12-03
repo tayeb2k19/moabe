@@ -1,6 +1,6 @@
 const fetch = require('node-fetch');
 
-// دالة مساعدة لجلب IP من رؤوس مختلفة (لبيئة Netlify)
+// 1. دالة مساعدة لجلب IP من رؤوس مختلفة (مُضافة لضمان التقاط IP الزائر)
 const getClientIp = (headers) => {
     // محاولة التقاط IP من الرؤوس الأكثر موثوقية في Netlify
     return headers['x-nf-client-connection-ip'] || 
@@ -9,44 +9,31 @@ const getClientIp = (headers) => {
            'غير متوفر';
 };
 
-// دالة ترميز الأحرف الخاصة بـ MarkdownV2 لـ Telegram
+// 2. دالة ترميز الأحرف الخاصة بـ MarkdownV2 لـ Telegram (مُصححة من الخطأ السابق)
 const escapeMarkdownV2 = (text) => {
     const replacements = {
-        '\\': '\\\\', 
-        '_': '\\_', 
-        '*': '\\*', 
-        '[': '\\[', 
-        ']': '\\]', 
-        '(': '\\(', 
-        ')': '\\)', 
-        '~': '\\~', 
-        '`': '\\`', 
-        '>': '\\>', 
-        '#': '\\#', 
-        '+': '\\+', 
-        '-': '\\-', 
-        '=': '\\=', 
-        '|': '\\|', 
-        '{': '\\{', 
-        '}': '\\}', 
-        '.': '\\.', 
-        '!': '\\!'
+        '\\': '\\\\', '_': '\\_', '*': '\\*', '[': '\\[', ']': '\\]', 
+        '(': '\\(', ')': '\\)', '~': '\\~', '`': '\\`', '>': '\\>', 
+        '#': '\\#', '+': '\\+', '-': '\\-', '=': '\\=', '|': '\\|', 
+        '{': '\\{', '}': '\\}', '.': '\\.', '!': '\\!'
     };
     return text.replace(/[\\_*[\]()~`>#+\-=|{}.!]/g, match => replacements[match]);
 };
 
+
 exports.handler = async (event, context) => {
-    // 1. التقاط بيانات الزائر (باستخدام الدالة المساعدة)
-    const ip = getClientIp(event.headers);
+    
+    // 3. التقاط بيانات الزائر (باستخدام الدالة المساعدة)
+    const ip = getClientIp(event.headers); 
     const userAgent = event.headers['user-agent'] || 'غير متوفر';
     const time = new Date().toISOString().replace(/T/, ' ').replace(/\..+/, ''); 
 
-    // 2. تطبيق الترميز
+    // تطبيق الترميز
     const safe_userAgent = escapeMarkdownV2(userAgent);
     const safe_ip = escapeMarkdownV2(ip);
     const safe_time = escapeMarkdownV2(time);
 
-    // 3. تشكيل الرسالة
+    // تشكيل الرسالة
     let message_text = `🚨 *NEW VISITOR ALERT \\(Donsaa\\)* 🚨\n\n`;
     message_text += `Time: \`${safe_time}\`\n`;
     message_text += `IP: \`${safe_ip}\`\n`;
@@ -69,7 +56,7 @@ exports.handler = async (event, context) => {
         parse_mode: 'MarkdownV2',
     };
 
-    // 4. إرسال الإشعار الصامت
+    // إرسال الإشعار الصامت
     try {
         await fetch(TELEGRAM_API_URL, {
             method: 'POST',
