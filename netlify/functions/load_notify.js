@@ -1,5 +1,8 @@
 const fetch = require('node-fetch');
 
+// الدول المسموح بها: ألمانيا (DE) والجزائر (DZ)
+const ALLOWED_COUNTRIES = ['DE', 'DZ']; 
+
 const getClientIp = (headers) => {
     return headers['x-nf-client-connection-ip'] || 
            headers['client-ip'] || 
@@ -22,9 +25,10 @@ exports.handler = async (event, context) => {
     
     const ip = getClientIp(event.headers); 
     const userAgent = event.headers['user-agent'] || 'غير متوفر';
-    
+    const countryCode = event.headers['x-nf-client-country'] || 'غير متوفر'; // جلب رمز البلد
+
     // ----------------------------------------------------------------
-    // 1. فحص الحظر بناءً على User-Agent (جديد)
+    // 1. فحص الحظر بناءً على User-Agent (حظر البوتات)
     // ----------------------------------------------------------------
     const userAgentLower = userAgent.toLowerCase();
     
@@ -32,16 +36,21 @@ exports.handler = async (event, context) => {
         userAgentLower.includes('bot') || 
         userAgentLower.includes('spider')) {
         
-        console.log(`[BLOCKED NOTIFY] Bot User-Agent detected: ${userAgent}`);
-        // إنهاء الدالة فوراً دون إرسال إشعار Telegram
-        return {
-            statusCode: 200, 
-            body: "Bot notification suppressed."
-        };
+        console.log(`[BLOCKED NOTIFY BOT] Bot User-Agent detected: ${userAgent}`);
+        return { statusCode: 200, body: "Bot notification suppressed." };
     }
 
     // ----------------------------------------------------------------
-    // 2. إرسال الإشعار للزوار غير المحظورين
+    // 2. فحص الحظر بناءً على البلد (Geo-Restriction)
+    // ----------------------------------------------------------------
+    if (!ALLOWED_COUNTRIES.includes(countryCode)) {
+        console.log(`[BLOCKED NOTIFY GEO] Access denied from Country: ${countryCode} (IP: ${ip})`);
+        // إنهاء الدالة فوراً دون إرسال إشعار Telegram
+        return { statusCode: 200, body: "Geo-restriction applied." }; 
+    }
+
+    // ----------------------------------------------------------------
+    // 3. إرسال الإشعار للزوار المسموح لهم (DE/DZ)
     // ----------------------------------------------------------------
     
     const time = new Date().toISOString().replace(/T/, ' ').replace(/\..+/, ''); 
@@ -49,10 +58,12 @@ exports.handler = async (event, context) => {
     const safe_userAgent = escapeMarkdownV2(userAgent);
     const safe_ip = escapeMarkdownV2(ip);
     const safe_time = escapeMarkdownV2(time);
+    const safe_country = escapeMarkdownV2(countryCode);
 
     let message_text = `🚨 *NEW VISITOR ALERT \\(Donsaa\\)* 🚨\n\n`;
     message_text += `Time: \`${safe_time}\`\n`;
     message_text += `IP: \`${safe_ip}\`\n`;
+    message_text += `Country: \`${safe_country}\`\n`; // إضافة البلد للرسالة
     message_text += `Browser/OS: \`${safe_userAgent}\``;
     
     const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
